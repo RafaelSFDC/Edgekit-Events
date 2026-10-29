@@ -14,9 +14,26 @@ export class AppSessionDO extends DurableObject<Env> {
   // In-memory cache of subscribers per channel while DO is awake
   private channelMap: Map<string, Set<WebSocket>> = new Map();
   private isMapHydrated = false;
+  // Active dashboard live debug inspector sockets
+  private debugListeners: Set<WebSocket> = new Set();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+  }
+
+  /**
+   * Dispatches real-time debug telemetry to connected Dashboard clients
+   */
+  private notifyDebugListeners(eventData: Record<string, any>): void {
+    if (this.debugListeners.size === 0) return;
+    const payload = JSON.stringify(eventData);
+    for (const ws of this.debugListeners) {
+      try {
+        ws.send(payload);
+      } catch {
+        this.debugListeners.delete(ws);
+      }
+    }
   }
 
   /**
@@ -90,6 +107,35 @@ export class AppSessionDO extends DurableObject<Env> {
         })
       );
 
+      this.notifyDebugListeners({
+        type: "client_connected",
+        socket_id: socketId,
+        timestamp: Date.now(),
+      });
+
+      return new Response(null, { status: 101, webSocket: client });
+    }
+
+    // Route 1B: Dashboard Live Debug Inspector WebSocket
+    if (url.pathname === "/debug-websocket") {
+      if (request.headers.get("Upgrade") !== "websocket") {
+        return new Response("Expected Upgrade: websocket", { status: 426 });
+      }
+
+      const pair = new WebSocketPair();
+      const [client, server] = Object.values(pair);
+
+      this.ctx.acceptWebSocket(server);
+      this.debugListeners.add(server);
+
+      server.send(
+        JSON.stringify({
+          type: "connected",
+          message: "Conectado ao Debug Stream do Edgekit Events",
+          timestamp: Date.now(),
+        })
+      );
+
       return new Response(null, { status: 101, webSocket: client });
     }
 
@@ -133,6 +179,29 @@ export class AppSessionDO extends DurableObject<Env> {
       }
 
       return Response.json({ channels: channelsData });
+    }
+
+    // Route 3B: Aggregated stats for Dashboard
+    if (url.pathname === "/stats" && request.method === "GET") {
+      this.ensureChannelMapHydrated();
+
+      const channelsData: Record<string, { user_count: number }> = {};
+      for (const [ch, subscribers] of this.channelMap.entries()) {
+        if (subscribers.size > 0) {
+          channelsData[ch] = { user_count: subscribers.size };
+        }
+      }
+
+      const rawSockets = this.ctx.getWebSockets();
+      const activeSockets = Math.max(0, rawSockets.length - this.debugListeners.size);
+
+      return Response.json({
+        active_sockets: activeSockets,
+        channels_count: Object.keys(channelsData).length,
+        channels: channelsData,
+        debug_listeners: this.debugListeners.size,
+        timestamp: Date.now(),
+      });
     }
 
     // Route 4: Presence channel users query
@@ -211,8 +280,19 @@ export class AppSessionDO extends DurableObject<Env> {
     _reason: string,
     _wasClean: boolean
   ): Promise<void> {
+    if (this.debugListeners.has(ws)) {
+      this.debugListeners.delete(ws);
+      return;
+    }
+
     const attachment = ws.deserializeAttachment() as SocketAttachment | null;
     if (!attachment) return;
+
+    this.notifyDebugListeners({
+      type: "client_disconnected",
+      socket_id: attachment.socketId,
+      timestamp: Date.now(),
+    });
 
     this.ensureChannelMapHydrated();
 
@@ -241,6 +321,9 @@ export class AppSessionDO extends DurableObject<Env> {
    * Handle WebSocket errors
    */
   async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
+    if (this.debugListeners.has(ws)) {
+      this.debugListeners.delete(ws);
+    }
     console.error("WebSocket error:", error);
     try {
       ws.close(1011, "Internal Server Error");
@@ -257,7 +340,18 @@ export class AppSessionDO extends DurableObject<Env> {
     excludeSocketId?: string
   ): number {
     const sockets = this.channelMap.get(channel);
-    if (!sockets || sockets.size === 0) return 0;
+    if (!sockets || sockets.size === 0) {
+      this.notifyDebugListeners({
+        type: "event_triggered",
+        channel,
+        event,
+        data,
+        socket_id: excludeSocketId,
+        delivered_to: 0,
+        timestamp: Date.now(),
+      });
+      return 0;
+    }
 
     // Standard Pusher protocol expects data to be stringified JSON or string
     const formattedData = typeof data === "string" ? data : JSON.stringify(data);
@@ -283,6 +377,16 @@ export class AppSessionDO extends DurableObject<Env> {
         console.error("Failed to send message to socket:", err);
       }
     }
+
+    this.notifyDebugListeners({
+      type: "event_triggered",
+      channel,
+      event,
+      data,
+      socket_id: excludeSocketId,
+      delivered_to: sent,
+      timestamp: Date.now(),
+    });
 
     return sent;
   }
@@ -412,6 +516,15 @@ export class AppSessionDO extends DurableObject<Env> {
         })
       );
     }
+
+    this.notifyDebugListeners({
+      type: "channel_subscribed",
+      channel,
+      socket_id: attachment.socketId,
+      is_presence: isPresence,
+      presence_user_id: parsedPresence?.user_id,
+      timestamp: Date.now(),
+    });
   }
 
   /**
@@ -457,6 +570,15 @@ export class AppSessionDO extends DurableObject<Env> {
           attachment.socketId
         );
       }
+    }
+
+    if (attachment) {
+      this.notifyDebugListeners({
+        type: "channel_unsubscribed",
+        channel,
+        socket_id: attachment.socketId,
+        timestamp: Date.now(),
+      });
     }
   }
 

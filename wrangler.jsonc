@@ -5,6 +5,12 @@
   "compatibility_date": "2025-02-14",
   "compatibility_flags": ["nodejs_compat"],
 
+  // Static Assets para servir a Dashboard Web (SPA)
+  "assets": {
+    "directory": "./dist-web",
+    "binding": "ASSETS"
+  },
+
   // Durable Objects binding (utiliza a API de Hibernação de WebSockets)
   "durable_objects": {
     "bindings": [

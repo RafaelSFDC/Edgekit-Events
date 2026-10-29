@@ -9,6 +9,9 @@ export interface AppConfig {
 export interface Env {
   APP_SESSION: DurableObjectNamespace<AppSessionDO>;
 
+  // Cloudflare Workers Static Assets binding para servir o frontend
+  ASSETS?: Fetcher;
+
   // Default app credentials (can be set via env vars or secrets)
   DEFAULT_APP_ID?: string;
   DEFAULT_APP_KEY?: string;

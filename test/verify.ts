@@ -1,6 +1,8 @@
 import assert from "node:assert";
 import { md5, hmacSha256Hex, constantTimeEquals, generateSocketId } from "../src/services/crypto";
 import { verifyPusherHttpSignature, verifyChannelAuth, verifySimpleBearerAuth } from "../src/services/auth";
+import { healthRoute } from "../src/routes/health";
+import { debugRoute } from "../src/routes/debug";
 
 async function runTests() {
   console.log("🚀 Iniciando testes de validação dos serviços...");
@@ -96,6 +98,46 @@ async function runTests() {
   assert.strictEqual(verifySimpleBearerAuth(app, null, app.secret), true);
   assert.strictEqual(verifySimpleBearerAuth(app, "Bearer wrong-secret"), false);
   console.log("✅ Simple Bearer Auth validada!");
+
+  // 7. Teste Rotas Hono & Auth do Dashboard
+  console.log("Testing Hono Routes & Dashboard Auth...");
+  const mockEnv: any = {
+    DEFAULT_APP_ID: "app-default",
+    DEFAULT_APP_KEY: "key-default",
+    DEFAULT_APP_SECRET: "secret-default",
+  };
+
+  const healthRes = await healthRoute.request("/health", {}, mockEnv);
+  assert.strictEqual(healthRes.status, 200);
+
+  const infoRes = await healthRoute.request("/api/info", {}, mockEnv);
+  assert.strictEqual(infoRes.status, 200);
+
+  const verifySuccessRes = await debugRoute.request(
+    "/api/v1/verify-secret",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: "secret-default" }),
+    },
+    mockEnv
+  );
+  assert.strictEqual(verifySuccessRes.status, 200);
+  const verifySuccessData: any = await verifySuccessRes.json();
+  assert.strictEqual(verifySuccessData.valid, true);
+  assert.strictEqual(verifySuccessData.app.id, "app-default");
+
+  const verifyFailRes = await debugRoute.request(
+    "/api/v1/verify-secret",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: "wrong-secret" }),
+    },
+    mockEnv
+  );
+  assert.strictEqual(verifyFailRes.status, 401);
+  console.log("✅ Rotas Hono e Auth do Dashboard validadas!");
 
   console.log("\n🎉 TODOS OS TESTES PASSARAM COM SUCESSO!");
 }

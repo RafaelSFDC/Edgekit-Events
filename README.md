@@ -1,17 +1,18 @@
 <div align="center">
 
-# 📡 Cloudflare Realtime
-### Clone Open-Source e Serverless do Pusher na Cloudflare
+# 📡 Edgekit Events
+### Clone Open-Source e Serverless do Pusher na Cloudflare com Dashboard Integrada
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%26%20Durable%20Objects-F38020?logo=cloudflare)](https://workers.cloudflare.com/)
+[![React 19](https://img.shields.io/badge/Dashboard-React%2019%20%26%20Tailwind-38bdf8?logo=react)](https://react.dev/)
 [![Hono](https://img.shields.io/badge/Framework-Hono-E36002?logo=hono)](https://hono.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 <p align="center">
   <b>Substitua Pusher, Ably e Soketi sem manter servidores dedicados (Node/Redis/Docker).</b><br/>
-  Projetado para desenvolvedores com aplicações em <b>hospedagens compartilhadas (PHP / cPanel)</b> ou arquiteturas serverless que precisam disparar eventos em tempo real para o navegador com <b>custo zero em idle</b>.
+  Projetado com <b>Dashboard Web completa integrada</b> (Live Debug Console, Simulador de Eventos, Canais) e entrega WebSocket para navegadores com <b>custo zero em idle</b> via Durable Objects Hibernation.
 </p>
 
 </div>
@@ -33,14 +34,30 @@ Você tem um sistema em **PHP tradicional (cPanel, Hostinger, Locaweb, Apache/Ng
 
 ## 📊 Comparativo
 
-| Recurso | Pusher Comercial | Soketi (Self-hosted) | **Cloudflare Realtime** |
+| Recurso | Pusher Comercial | Soketi (Self-hosted) | **Edgekit Events** |
 | :--- | :---: | :---: | :---: |
 | **Custo de Conexão Ociosa** | Alto (planos pagos) | Custo do VPS + Redis | **R$ 0,00 (Hibernação)** |
 | **Infraestrutura Necessária** | Nenhuma (SaaS) | VPS dedicada, Docker, Redis | **Nenhuma (Serverless na Cloudflare)** |
 | **Escalabilidade Automática** | Sim | Manual (Horizontal / Load Balancer) | **Global na Borda (Edge Cloudflare)** |
+| **Dashboard Visual Integrada**| Sim (Paga) | Limitada | **Sim (React 19 + Static Assets)** |
+| **Live Debug Console (Stream)**| Sim | Limitado | **Sim (WebSocket Debug Tap)** |
+| **Simulador de Eventos Web**  | Sim | Não | **Sim (Com templates prontos)** |
 | **Compatível com `pusher-js`** | Sim | Sim | **Sim (Protocolo v7)** |
 | **Compatível com Laravel Echo** | Sim | Sim | **Sim** |
 | **Disparo sem Dependências (PHP)**| Não (requer SDK/HMAC) | Não (requer SDK/HMAC) | **Sim (API REST simplificada)** |
+
+---
+
+## 🖥️ Dashboard Web Integrada
+
+O projeto conta com uma interface visual completa construída em **React 19, Tailwind CSS e Lucide Icons**, servida automaticamente pelo Cloudflare Workers via **Static Assets** na rota raiz `/`:
+
+- 📡 **Live Debug Console**: Feed de eventos em streaming ao vivo com badges coloridos, filtro por categoria, busca textual e visualizador de JSON formatado com cópia em 1 clique.
+- 🚀 **Simulador / Disparador de Teste**: Dispare eventos em qualquer canal diretamente pelo navegador com templates pré-configurados (Pedido E-commerce, Chat, Alerta do Sistema) sem depender de backend.
+- 👥 **Explorador de Canais & Presença**: Acompanhe canais públicos, privados e de presença em tempo real com contagem de membros online.
+- 📋 **Gerador de Snippets**: Código pronto e configurado para copiar em JavaScript (`pusher-js`), Laravel Echo, PHP cURL nativo, Node.js, Python e terminal cURL.
+- 🌐 **Internacionalização (i18n)**: Alternância em tempo real entre **Português (pt-BR)** e **Inglês (EN)**.
+- 🔐 **Autenticação Segura**: Modal de autenticação da `APP_SECRET` com validação de credenciais e armazenamento no `localStorage` do navegador.
 
 ---
 
@@ -49,9 +66,9 @@ Você tem um sistema em **PHP tradicional (cPanel, Hostinger, Locaweb, Apache/Ng
 ### 1. Clonar o Projeto e Instalar Dependências
 
 ```bash
-git clone https://github.com/seu-usuario/cloudflare-realtime.git
-cd cloudflare-realtime
-npm install
+git clone https://github.com/seu-usuario/edgekit-events.git
+cd "Edgekit Events"
+pnpm install
 ```
 
 ### 2. Configurar as Chaves da sua Aplicação
@@ -71,13 +88,20 @@ Abra o arquivo [`wrangler.jsonc`](wrangler.jsonc) e altere as chaves no bloco `v
 > npx wrangler secret put DEFAULT_APP_SECRET
 > ```
 
-### 3. Testar Localmente
+### 3. Testar Localmente (Worker + Dashboard)
 
 ```bash
-npm run dev
+# Compilar os assets da Dashboard e iniciar o worker local
+pnpm build:web
+pnpm dev
 ```
 
-Abra o arquivo [`examples/frontend-client/index.html`](examples/frontend-client/index.html) diretamente no seu navegador para ver a conexão WebSocket e o disparo funcionando na hora!
+Abra `http://localhost:8787` diretamente no seu navegador para acessar a Dashboard interativa!
+
+Para desenvolvimento com Hot-Reload do React:
+```bash
+pnpm dev:web
+```
 
 ### 4. Fazer o Deploy para a Cloudflare
 
