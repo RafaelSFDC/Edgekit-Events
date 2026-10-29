@@ -8,8 +8,10 @@ import {
 } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { useI18n } from '../i18n/context';
-import { useStatsQuery, useEventsQuery } from '../hooks/api';
-import { PageLayout, PageHeader } from '../components/layout';
+import { useStatsQuery } from '../hooks/api/use-stats';
+import { useEventsQuery } from '../hooks/api/use-events';
+import { PageLayout } from '../components/layout/PageLayout';
+import { PageHeader } from '@/components/ui/page-header';
 import { StatsBar } from '../components/StatsBar';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +23,7 @@ export const OverviewPage: React.FC = () => {
   const { data: events = [] } = useEventsQuery();
 
   return (
-    <PageLayout className="gap-6 pb-12">
+    <PageLayout>
       {/* Cabeçalho padrão da Dashboard */}
       <PageHeader
         title={t.breadcrumbs.overview}

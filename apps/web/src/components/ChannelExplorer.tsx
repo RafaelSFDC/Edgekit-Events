@@ -2,7 +2,7 @@ import React from 'react';
 import { Hash, Users, Lock, Radio, Send, RefreshCw } from 'lucide-react';
 import type { ChannelStat } from '../types';
 import { useI18n } from '../i18n/context';
-import { useStatsQuery } from '../hooks/api';
+import { useStatsQuery } from '../hooks/api/use-stats';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

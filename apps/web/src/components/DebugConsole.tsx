@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import type { DebugEvent } from '../types';
 import { useI18n } from '../i18n/context';
-import { useEventsQuery, useClearEvents } from '../hooks/api';
+import { useEventsQuery, useClearEvents } from '../hooks/api/use-events';
 import { formatTime, copyToClipboard, cn } from '../lib/utils';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

@@ -165,4 +165,15 @@ export const en: Translations = {
     secureSession: 'Secure Session via HttpOnly Cookie',
     authenticatedActive: 'Active authenticated session on server',
   },
+  login: {
+    title: 'Access Dashboard',
+    subtitle: 'Enter your access key (App Secret) to access the realtime cluster',
+    passkeyLabel: 'Access Key / Passkey',
+    passkeyPlaceholder: 'Enter your access key...',
+    submitButton: 'Sign in to Dashboard',
+    loggingIn: 'Authenticating...',
+    secureNote: 'Session secured via HttpOnly Cookie, immune to script leaks (XSS).',
+    devHint: 'Local development? Check the key configured in your .dev.vars file',
+    invalidPasskey: 'Invalid key. Please verify your access key and try again.',
+  },
 };

@@ -165,4 +165,15 @@ export const ptBR: Translations = {
     secureSession: 'Sessão Segura com Cookie HttpOnly',
     authenticatedActive: 'Sessão autenticada ativa no servidor',
   },
+  login: {
+    title: 'Acessar Dashboard',
+    subtitle: 'Informe a chave de acesso (App Secret) para acessar o cluster realtime',
+    passkeyLabel: 'Chave de Acesso / Passkey',
+    passkeyPlaceholder: 'Insira sua chave de acesso...',
+    submitButton: 'Entrar na Dashboard',
+    loggingIn: 'Autenticando...',
+    secureNote: 'Sessão protegida via Cookie HttpOnly seguro e imune a scripts (XSS).',
+    devHint: 'Ambiente local? Verifique o valor configurado em seu arquivo .dev.vars',
+    invalidPasskey: 'Chave inválida. Verifique sua chave de acesso e tente novamente.',
+  },
 };

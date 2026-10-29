@@ -1,7 +1,8 @@
 import React from 'react';
 import { Users, Hash, Zap, Cpu } from 'lucide-react';
 import { useI18n } from '../i18n/context';
-import { useStatsQuery, useEventsQuery } from '../hooks/api';
+import { useStatsQuery } from '../hooks/api/use-stats';
+import { useEventsQuery } from '../hooks/api/use-events';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';

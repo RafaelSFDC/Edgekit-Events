@@ -1,12 +1,12 @@
 import React from 'react';
 import {
-  Radio,
   Globe,
   Sun,
   Moon,
   LogOut,
   User,
 } from 'lucide-react';
+import { EdgekitLogo } from '../common/EdgekitLogo';
 import { useI18n } from '../../i18n/context';
 import { useTheme } from '../../theme/context';
 import { useAuth } from '../../context/auth-context';
@@ -40,7 +40,7 @@ interface TopHeaderProps {
 export const TopHeader: React.FC<TopHeaderProps> = ({ wsStatus }) => {
   const { locale, setLocale, t } = useI18n();
   const { resolvedTheme, toggleTheme } = useTheme();
-  const { isAuthenticated, openModal, logout } = useAuth();
+  const { logout } = useAuth();
   const { state } = useSidebar();
 
   // Rota ativa para os breadcrumbs integrados no header
@@ -77,15 +77,15 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ wsStatus }) => {
         )}
       >
         <Link to="/" className="flex items-center gap-2 overflow-hidden outline-hidden">
-          {/* Cloudflare-like Orange/Flame Icon */}
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-500 shadow-xs">
-            <Radio className="size-4 animate-pulse" />
+          {/* Logo oficial do Edgekit Events */}
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-500 shadow-xs">
+            <EdgekitLogo size={20} />
           </div>
 
           {state !== 'collapsed' && (
             <div className="flex items-center gap-1.5 overflow-hidden whitespace-nowrap">
               <span className="font-bold tracking-tight text-foreground text-sm">Edgekit</span>
-              <span className="font-semibold text-amber-500 text-sm">Events</span>
+              <span className="font-semibold text-sky-500 text-sm">Events</span>
               <span className="ml-1 rounded px-1.5 py-0.2 text-[10px] font-mono font-medium bg-muted text-muted-foreground border border-border">
                 default
               </span>
@@ -214,21 +214,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ wsStatus }) => {
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                variant={isAuthenticated ? 'destructive' : 'default'}
-                onClick={() => {
-                  if (isAuthenticated) {
-                    logout();
-                  } else {
-                    openModal();
-                  }
-                }}
+                variant="destructive"
+                onClick={() => logout()}
               >
                 <LogOut className="size-4" />
-                <span>
-                  {isAuthenticated
-                    ? (locale === 'pt-BR' ? 'Finalizar sessão' : 'Sign out')
-                    : (locale === 'pt-BR' ? 'Conectar' : 'Connect')}
-                </span>
+                <span>{locale === 'pt-BR' ? 'Finalizar sessão' : 'Sign out'}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

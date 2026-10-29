@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useI18n } from '../../i18n/context';
-import { useStatsQuery, useEventsQuery } from '../../hooks/api';
+import { useStatsQuery } from '../../hooks/api/use-stats';
+import { useEventsQuery } from '../../hooks/api/use-events';
 import {
   Sidebar,
   SidebarHeader,

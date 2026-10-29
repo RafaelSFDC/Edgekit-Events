@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Send, Sparkles, CheckCircle2, AlertTriangle, KeyRound, Code } from 'lucide-react';
+import { Send, Sparkles, CheckCircle2, Code, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useI18n } from '../i18n/context';
-import { useAuth } from '../context/auth-context';
-import { useTriggerEvent } from '../hooks/api';
+import { useTriggerEvent } from '../hooks/api/use-trigger';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -55,7 +54,6 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
   initialChannel = 'pedidos',
 }) => {
   const { t } = useI18n();
-  const { isAuthenticated, openModal } = useAuth();
   const [channel, setChannel] = useState(initialChannel);
   const [event, setEvent] = useState('novo-pedido');
   const [payloadText, setPayloadText] = useState(
@@ -87,11 +85,6 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
     e.preventDefault();
     if (!channel.trim() || !event.trim()) return;
 
-    if (!isAuthenticated) {
-      openModal();
-      return;
-    }
-
     let parsedPayload: any;
     try {
       parsedPayload = JSON.parse(payloadText);
@@ -119,26 +112,6 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
       </CardHeader>
 
       <CardContent className="flex flex-col gap-6">
-        {/* Warning if not authenticated with HttpOnly cookie */}
-        {!isAuthenticated && (
-          <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-between p-4">
-            <div className="flex items-center gap-3 text-xs">
-              <AlertTriangle className="size-5 shrink-0" />
-              <AlertDescription className="text-foreground font-medium">
-                {t.simulator.needSecretWarning}
-              </AlertDescription>
-            </div>
-            <Button
-              size="sm"
-              onClick={openModal}
-              className="gap-1.5 shrink-0"
-            >
-              <KeyRound className="size-3.5" />
-              <span>Conectar Agora</span>
-            </Button>
-          </Alert>
-        )}
-
         {/* Preset template selector */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 mr-1">

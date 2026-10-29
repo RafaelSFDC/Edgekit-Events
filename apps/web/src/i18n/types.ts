@@ -165,4 +165,15 @@ export interface Translations {
     secureSession: string;
     authenticatedActive: string;
   };
+  login: {
+    title: string;
+    subtitle: string;
+    passkeyLabel: string;
+    passkeyPlaceholder: string;
+    submitButton: string;
+    loggingIn: string;
+    secureNote: string;
+    devHint: string;
+    invalidPasskey: string;
+  };
 }

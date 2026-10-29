@@ -1,62 +1,107 @@
+import React from 'react';
 import {
   createRootRoute,
   createRoute,
   createRouter,
+  Outlet,
+  Navigate,
 } from '@tanstack/react-router';
 import { DashboardLayout } from './components/layout/DashboardLayout';
+import { LoginPage } from './pages/LoginPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { ConsolePage } from './pages/ConsolePage';
 import { SimulatorPage } from './pages/SimulatorPage';
 import { ChannelsPage } from './pages/ChannelsPage';
 import { SnippetsPage } from './pages/SnippetsPage';
+import { useAuth } from './context/auth-context';
+import { EdgekitLogo } from './components/common/EdgekitLogo';
 
-// 1. Rota raiz que envelopa o DashboardLayout (TopHeader + Sidebar + Breadcrumbs + Outlet)
+/**
+ * Componente Guardião da Dashboard:
+ * Se o usuário não estiver autenticado, redireciona para /login fora da dashboard.
+ * Se estiver na dashboard, o usuário está 100% autenticado.
+ */
+const DashboardGuard: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-svh w-full flex-col items-center justify-center bg-background text-foreground gap-3">
+        <div className="flex size-12 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-500 animate-pulse">
+          <EdgekitLogo size={28} />
+        </div>
+        <p className="text-xs text-muted-foreground animate-pulse">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <DashboardLayout />;
+};
+
+// 1. Rota raiz vazia que renderiza o Outlet
 const rootRoute = createRootRoute({
-  component: DashboardLayout,
+  component: Outlet,
 });
 
-// 2. Rota inicial: Visão Geral / Overview
-const indexRoute = createRoute({
+// 2. Rota pública de Login (fora do DashboardLayout)
+const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LoginPage,
+});
+
+// 3. Layout Route da Dashboard protegida pelo DashboardGuard
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: '_dashboard',
+  component: DashboardGuard,
+});
+
+// 4. Rotas filhas do Dashboard
+const indexRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
   path: '/',
   component: OverviewPage,
 });
 
-// 3. Rota de Console ao Vivo
 const consoleRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => dashboardRoute,
   path: '/console',
   component: ConsolePage,
 });
 
-// 4. Rota do Simulador de Eventos
 const simulatorRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => dashboardRoute,
   path: '/simulator',
   component: SimulatorPage,
 });
 
-// 5. Rota do Explorador de Canais
 const channelsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => dashboardRoute,
   path: '/channels',
   component: ChannelsPage,
 });
 
-// 6. Rota de Snippets & SDKs
 const snippetsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => dashboardRoute,
   path: '/snippets',
   component: SnippetsPage,
 });
 
-// 7. Montagem da Árvore de Rotas
+// 5. Montagem da Árvore de Rotas
 const routeTree = rootRoute.addChildren([
-  indexRoute,
-  consoleRoute,
-  simulatorRoute,
-  channelsRoute,
-  snippetsRoute,
+  loginRoute,
+  dashboardRoute.addChildren([
+    indexRoute,
+    consoleRoute,
+    simulatorRoute,
+    channelsRoute,
+    snippetsRoute,
+  ]),
 ]);
 
 export const router = createRouter({
