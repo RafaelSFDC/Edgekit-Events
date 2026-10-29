@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cloudflare-realtime",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-02-14",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "APP_SESSION",
+        "class_name": "AppSessionDO"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["AppSessionDO"]
+    }
+  ],
+  "vars": {
+    "DEFAULT_APP_ID": "app-default",
+    "DEFAULT_APP_KEY": "key-default",
+    "DEFAULT_APP_SECRET": "secret-default"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
