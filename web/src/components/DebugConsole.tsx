@@ -135,7 +135,7 @@ export const DebugConsole: React.FC<DebugConsoleProps> = ({
         );
       default:
         return (
-          <Badge variant="outline" className="space-x-1 text-[11px] bg-zinc-800 text-zinc-300 border-zinc-700">
+          <Badge variant="outline" className="space-x-1 text-[11px] bg-secondary text-secondary-foreground border-border">
             <Radio className="w-3 h-3" />
             <span>SYSTEM</span>
           </Badge>
@@ -166,7 +166,7 @@ export const DebugConsole: React.FC<DebugConsoleProps> = ({
               variant={filterType === 'all' ? 'default' : 'ghost'}
               size="xs"
               onClick={() => setFilterType('all')}
-              className={filterType === 'all' ? 'bg-zinc-800 text-foreground' : 'text-muted-foreground'}
+              className={filterType === 'all' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}
             >
               {t.debugConsole.filterAll}
             </Button>
@@ -174,7 +174,7 @@ export const DebugConsole: React.FC<DebugConsoleProps> = ({
               variant={filterType === 'events' ? 'default' : 'ghost'}
               size="xs"
               onClick={() => setFilterType('events')}
-              className={filterType === 'events' ? 'bg-zinc-800 text-foreground' : 'text-muted-foreground'}
+              className={filterType === 'events' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}
             >
               {t.debugConsole.filterEvents}
             </Button>
@@ -182,7 +182,7 @@ export const DebugConsole: React.FC<DebugConsoleProps> = ({
               variant={filterType === 'connections' ? 'default' : 'ghost'}
               size="xs"
               onClick={() => setFilterType('connections')}
-              className={filterType === 'connections' ? 'bg-zinc-800 text-foreground' : 'text-muted-foreground'}
+              className={filterType === 'connections' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}
             >
               {t.debugConsole.filterConnections}
             </Button>
@@ -190,7 +190,7 @@ export const DebugConsole: React.FC<DebugConsoleProps> = ({
               variant={filterType === 'subscriptions' ? 'default' : 'ghost'}
               size="xs"
               onClick={() => setFilterType('subscriptions')}
-              className={filterType === 'subscriptions' ? 'bg-zinc-800 text-foreground' : 'text-muted-foreground'}
+              className={filterType === 'subscriptions' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}
             >
               {t.debugConsole.filterSubscriptions}
             </Button>
@@ -233,7 +233,7 @@ export const DebugConsole: React.FC<DebugConsoleProps> = ({
           <div className="divide-y divide-border">
             {filteredEvents.length === 0 ? (
               <div className="py-20 text-center px-4">
-                <Radio className="w-10 h-10 mx-auto text-zinc-600 mb-3 animate-pulse" />
+                <Radio className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3 animate-pulse" />
                 <p className="text-sm font-medium text-muted-foreground">
                   {events.length === 0
                     ? t.debugConsole.noEvents
@@ -255,7 +255,7 @@ export const DebugConsole: React.FC<DebugConsoleProps> = ({
 
                     {/* Channel Name */}
                     {ev.channel ? (
-                      <Badge variant="outline" className="shrink-0 font-mono text-[11px] bg-zinc-800 border-zinc-700/80 text-zinc-200">
+                      <Badge variant="outline" className="shrink-0 font-mono text-[11px] bg-secondary border-border text-foreground">
                         {ev.channel}
                       </Badge>
                     ) : null}
@@ -270,22 +270,22 @@ export const DebugConsole: React.FC<DebugConsoleProps> = ({
 
                       {ev.type === 'client_connected' && (
                         <span className="text-muted-foreground">
-                          Cliente conectou: <code className="text-zinc-300 font-mono">{ev.socket_id}</code>
+                          Cliente conectou: <code className="text-foreground font-mono">{ev.socket_id}</code>
                         </span>
                       )}
                       {ev.type === 'client_disconnected' && (
                         <span className="text-muted-foreground">
-                          Cliente desconectou: <code className="text-zinc-300 font-mono">{ev.socket_id}</code>
+                          Cliente desconectou: <code className="text-foreground font-mono">{ev.socket_id}</code>
                         </span>
                       )}
                       {ev.type === 'channel_subscribed' && (
                         <span className="text-muted-foreground">
-                          Inscrito via socket <code className="text-zinc-300 font-mono">{ev.socket_id}</code>
+                          Inscrito via socket <code className="text-foreground font-mono">{ev.socket_id}</code>
                         </span>
                       )}
                       {ev.type === 'channel_unsubscribed' && (
                         <span className="text-muted-foreground">
-                          Desinscrito via socket <code className="text-zinc-300 font-mono">{ev.socket_id}</code>
+                          Desinscrito via socket <code className="text-foreground font-mono">{ev.socket_id}</code>
                         </span>
                       )}
                     </div>
@@ -294,17 +294,17 @@ export const DebugConsole: React.FC<DebugConsoleProps> = ({
                   {/* Timestamp & Inspect trigger */}
                   <div className="flex items-center space-x-3 shrink-0 ml-4">
                     {ev.delivered_to !== undefined && (
-                      <span className="hidden sm:inline text-[11px] text-zinc-500 font-mono">
+                      <span className="hidden sm:inline text-[11px] text-muted-foreground font-mono">
                         {ev.delivered_to} {ev.delivered_to === 1 ? 'destinatário' : 'destinatários'}
                       </span>
                     )}
                     {ev.data !== undefined && (
-                      <span className="text-[11px] text-sky-400 hover:underline flex items-center space-x-1">
+                      <span className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline flex items-center space-x-1">
                         <Code2 className="w-3 h-3" />
                         <span className="hidden sm:inline">Ver JSON</span>
                       </span>
                     )}
-                    <span className="text-[11px] text-zinc-500 font-mono">
+                    <span className="text-[11px] text-muted-foreground font-mono">
                       {formatTime(ev.timestamp)}
                     </span>
                   </div>

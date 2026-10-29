@@ -25,6 +25,9 @@ export interface Translations {
     connectSecret: string;
     docs: string;
     languageTooltip: string;
+    themeTooltip: string;
+    themeLight: string;
+    themeDark: string;
   };
   stats: {
     activeConnections: string;

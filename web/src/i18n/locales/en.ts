@@ -25,6 +25,9 @@ export const en: Translations = {
     connectSecret: 'Connect Secret',
     docs: 'Documentation',
     languageTooltip: 'Change language',
+    themeTooltip: 'Toggle theme (Light / Dark)',
+    themeLight: 'Light Mode',
+    themeDark: 'Dark Mode',
   },
   stats: {
     activeConnections: 'Active Connections',

@@ -25,6 +25,9 @@ export const ptBR: Translations = {
     connectSecret: 'Conectar Secret',
     docs: 'Documentação',
     languageTooltip: 'Alterar idioma',
+    themeTooltip: 'Alternar tema (Claro / Escuro)',
+    themeLight: 'Modo Claro',
+    themeDark: 'Modo Escuro',
   },
   stats: {
     activeConnections: 'Conexões Ativas',

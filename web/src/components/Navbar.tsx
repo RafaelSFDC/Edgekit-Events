@@ -1,6 +1,7 @@
 import React from 'react';
-import { Radio, Key, Globe, ExternalLink, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Radio, Key, Globe, ExternalLink, RefreshCw, ShieldCheck, Sun, Moon } from 'lucide-react';
 import { useI18n } from '../i18n/context';
+import { useTheme } from '../theme/context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -21,26 +22,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   onReconnectWs,
 }) => {
   const { locale, setLocale, t } = useI18n();
+  const { resolvedTheme, toggleTheme } = useTheme();
 
   return (
-    <header className="border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40">
+    <header className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 shadow-sm shadow-sky-500/20">
+          <div className="w-9 h-9 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-600 dark:text-sky-400 shadow-sm shadow-sky-500/20">
             <Radio className="w-5 h-5 animate-pulse" />
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-bold tracking-tight text-foreground text-lg">Edgekit</span>
-              <span className="font-semibold text-sky-400 text-lg">Events</span>
-              <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider bg-sky-500/10 text-sky-400 border-sky-500/20 px-1.5 py-0.5">
-                DO Realtime
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground hidden sm:block">
-              {t.navbar.brandSubtitle}
-            </p>
+          <div className="flex items-center space-x-1.5">
+            <span className="font-bold tracking-tight text-foreground text-lg">Edgekit</span>
+            <span className="font-semibold text-sky-600 dark:text-sky-400 text-lg">Events</span>
           </div>
         </div>
 
@@ -53,19 +47,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={wsStatus === 'disconnected' ? t.navbar.reconnect : undefined}
             className={`flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium transition-colors ${
               wsStatus === 'connected'
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                 : wsStatus === 'connecting'
-                ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                : 'bg-rose-500/10 text-rose-400 border-rose-500/30 cursor-pointer hover:bg-rose-500/20'
+                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 cursor-pointer hover:bg-rose-500/20'
             }`}
           >
             <span
               className={`w-2 h-2 rounded-full ${
                 wsStatus === 'connected'
-                  ? 'bg-emerald-400 animate-ping'
+                  ? 'bg-emerald-500 dark:bg-emerald-400 animate-ping'
                   : wsStatus === 'connecting'
-                  ? 'bg-amber-400 animate-pulse'
-                  : 'bg-rose-400'
+                  ? 'bg-amber-500 dark:bg-amber-400 animate-pulse'
+                  : 'bg-rose-500 dark:bg-rose-400'
               }`}
             />
             <span className="capitalize">
@@ -83,7 +77,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* App Key Badge if loaded */}
           {appKey && (
             <Badge variant="outline" className="hidden md:flex items-center space-x-1 bg-secondary/80 border-border text-xs text-muted-foreground font-normal">
-              <span className="text-zinc-500">Key:</span>
+              <span className="text-muted-foreground/80">Key:</span>
               <code className="text-foreground font-mono">{appKey}</code>
             </Badge>
           )}
@@ -95,19 +89,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={onOpenSecretModal}
             className={
               isAuthenticated
-                ? 'border-sky-500/30 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20'
+                ? 'border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20'
                 : ''
             }
           >
             {isAuthenticated ? (
               <>
-                <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                <ShieldCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                 <span className="hidden sm:inline">Sessão Segura Ativa</span>
                 <span className="sm:hidden">Sessão</span>
               </>
             ) : (
               <>
-                <Key className="w-3.5 h-3.5 text-zinc-400" />
+                <Key className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>{t.navbar.connectSecret}</span>
               </>
             )}
@@ -123,6 +117,32 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Globe className="w-3.5 h-3.5" />
             <span className="uppercase font-semibold">{locale === 'pt-BR' ? 'PT' : 'EN'}</span>
+          </Button>
+
+          {/* Theme Switcher */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleTheme}
+            title={t.navbar.themeTooltip}
+            aria-label={t.navbar.themeTooltip}
+            className="flex items-center space-x-1 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            {resolvedTheme === 'dark' ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-400 transition-transform hover:rotate-45" />
+                <span className="hidden sm:inline font-medium">
+                  {locale === 'pt-BR' ? 'Claro' : 'Light'}
+                </span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-sky-600 transition-transform hover:-rotate-12" />
+                <span className="hidden sm:inline font-medium">
+                  {locale === 'pt-BR' ? 'Escuro' : 'Dark'}
+                </span>
+              </>
+            )}
           </Button>
 
           {/* Docs / Github Link */}

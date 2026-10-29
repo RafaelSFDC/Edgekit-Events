@@ -22,7 +22,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
       {/* 1. Conexões Ativas */}
-      <Card className="p-0 border-border/80 shadow-sm">
+      <Card className="p-0 border-border/80 shadow-xs">
         <CardContent className="p-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-muted-foreground">
@@ -37,14 +37,14 @@ export const StatsBar: React.FC<StatsBarProps> = ({
               </span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+          <div className="w-10 h-10 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-600 dark:text-sky-400">
             <Users className="w-5 h-5" />
           </div>
         </CardContent>
       </Card>
 
       {/* 2. Canais Ocupados */}
-      <Card className="p-0 border-border/80 shadow-sm">
+      <Card className="p-0 border-border/80 shadow-xs">
         <CardContent className="p-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-muted-foreground">
@@ -59,14 +59,14 @@ export const StatsBar: React.FC<StatsBarProps> = ({
               </span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+          <div className="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
             <Hash className="w-5 h-5" />
           </div>
         </CardContent>
       </Card>
 
       {/* 3. Eventos na Sessão */}
-      <Card className="p-0 border-border/80 shadow-sm">
+      <Card className="p-0 border-border/80 shadow-xs">
         <CardContent className="p-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-muted-foreground">
@@ -81,14 +81,14 @@ export const StatsBar: React.FC<StatsBarProps> = ({
               </span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+          <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
             <Zap className="w-5 h-5" />
           </div>
         </CardContent>
       </Card>
 
       {/* 4. Estado de Hibernação do DO */}
-      <Card className="p-0 border-border/80 shadow-sm">
+      <Card className="p-0 border-border/80 shadow-xs">
         <CardContent className="p-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-muted-foreground">
@@ -99,8 +99,8 @@ export const StatsBar: React.FC<StatsBarProps> = ({
                 variant={isHibernating ? 'outline' : 'default'}
                 className={
                   isHibernating
-                    ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
-                    : 'bg-sky-500 text-slate-950'
+                    ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                    : 'bg-sky-500 text-white dark:text-slate-950 font-semibold'
                 }
               >
                 {isHibernating ? t.stats.hibernationIdle : t.stats.hibernationActive}
@@ -113,8 +113,8 @@ export const StatsBar: React.FC<StatsBarProps> = ({
           <div
             className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
               isHibernating
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                : 'bg-sky-500/10 border-sky-500/20 text-sky-400'
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                : 'bg-sky-500/10 border-sky-500/20 text-sky-600 dark:text-sky-400'
             }`}
           >
             <Cpu className="w-5 h-5" />

@@ -63,12 +63,12 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
       <CardContent>
         {channelList.length === 0 ? (
           <div className="py-16 text-center">
-            <Hash className="w-10 h-10 mx-auto text-zinc-600 mb-3" />
+            <Hash className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
             <p className="text-sm font-medium text-muted-foreground">
               {t.channels.noChannels}
             </p>
-            <p className="text-xs text-zinc-500 mt-1">
-              Conecte um cliente via <code className="text-zinc-400">pusher-js</code> ou dispare um evento para abrir um canal.
+            <p className="text-xs text-muted-foreground mt-1">
+              Conecte um cliente via <code className="text-foreground font-mono">pusher-js</code> ou dispare um evento para abrir um canal.
             </p>
           </div>
         ) : (
@@ -76,28 +76,28 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
             {channelList.map((ch) => (
               <Card
                 key={ch.name}
-                className="bg-secondary/40 border-border/80 flex flex-col justify-between hover:border-zinc-700 transition-colors"
+                className="bg-secondary/40 border-border/80 flex flex-col justify-between hover:border-sky-500/40 transition-colors shadow-xs"
               >
                 <CardContent className="p-4 pb-2">
                   <div className="flex items-center justify-between mb-2">
                     {ch.isPresence ? (
-                      <Badge variant="outline" className="space-x-1 text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                      <Badge variant="outline" className="space-x-1 text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
                         <Users className="w-3 h-3" />
                         <span>{t.channels.presenceChannel}</span>
                       </Badge>
                     ) : ch.isPrivate ? (
-                      <Badge variant="outline" className="space-x-1 text-[10px] bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
+                      <Badge variant="outline" className="space-x-1 text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">
                         <Lock className="w-3 h-3" />
                         <span>{t.channels.privateChannel}</span>
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="space-x-1 text-[10px] bg-sky-500/10 text-sky-400 border-sky-500/20">
+                      <Badge variant="outline" className="space-x-1 text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20">
                         <Radio className="w-3 h-3" />
                         <span>{t.channels.publicChannel}</span>
                       </Badge>
                     )}
 
-                    <span className="text-xs text-zinc-400 font-medium">
+                    <span className="text-xs text-muted-foreground font-medium">
                       {t.channels.listenersCount(ch.user_count)}
                     </span>
                   </div>

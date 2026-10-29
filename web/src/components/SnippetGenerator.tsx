@@ -282,7 +282,7 @@ Console.WriteLine(result);`,
             </Button>
           </div>
 
-          <ScrollArea className="rounded-xl border border-zinc-800 bg-zinc-950 max-h-[460px]">
+          <ScrollArea className="rounded-xl border border-border/80 dark:border-zinc-800 bg-zinc-950 max-h-[460px]">
             <pre className="p-4 text-xs font-mono text-zinc-200 leading-relaxed">
               <code>{snippets[activeTab]}</code>
             </pre>

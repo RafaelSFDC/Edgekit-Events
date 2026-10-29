@@ -127,7 +127,7 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
                 {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </Button>
             </div>
-            <p className="text-[11px] text-zinc-400 mt-2 bg-secondary/50 p-2.5 rounded-lg border border-border/80 flex items-start space-x-2">
+            <p className="text-[11px] text-muted-foreground mt-2 bg-secondary/50 p-2.5 rounded-lg border border-border/80 flex items-start space-x-2">
               <span className="text-sky-400 font-bold shrink-0">🛡️</span>
               <span>{t.modal.savedNote}</span>
             </p>
