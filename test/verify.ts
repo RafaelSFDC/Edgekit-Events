@@ -165,6 +165,33 @@ async function runTests() {
 
   console.log("✅ Rotas Hono e Auth com Cookie HttpOnly validadas com sucesso!");
 
+  // 8. Teste Snippet Oficial de TypeScript (snippets/events.ts)
+  console.log("Testing Official TypeScript Snippet (snippets/events.ts)...");
+  const { createEventsClient } = await import("../snippets/events");
+  const snippetClient = createEventsClient({
+    host: "realtime.test.internal",
+    appKey: app.key,
+    appSecret: app.secret,
+    appId: app.id,
+  });
+
+  // Testa autorização de canal privado via snippet
+  const privAuth = await snippetClient.authorizeChannel("999.111", "private-user.5");
+  assert.strictEqual(
+    await verifyChannelAuth(app, "999.111", "private-user.5", privAuth.auth),
+    true,
+    "Assinatura gerada pelo snippet deve ser validada pelo servidor"
+  );
+
+  // Testa autorização de canal de presença via snippet
+  const presAuth = await snippetClient.authorizeChannel("999.111", "presence-chat.room", { name: "Tester" });
+  assert.strictEqual(
+    await verifyChannelAuth(app, "999.111", "presence-chat.room", presAuth.auth, presAuth.channel_data),
+    true,
+    "Assinatura de presença gerada pelo snippet deve ser validada pelo servidor"
+  );
+  console.log("✅ Snippet TypeScript snippets/events.ts validado com 100% de precisão!");
+
   console.log("\n🎉 TODOS OS TESTES PASSARAM COM SUCESSO!");
 }
 

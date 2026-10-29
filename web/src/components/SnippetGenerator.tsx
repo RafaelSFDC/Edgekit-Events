@@ -15,7 +15,7 @@ export const SnippetGenerator: React.FC<SnippetGeneratorProps> = ({
   host,
 }) => {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<'js' | 'laravel' | 'php' | 'node' | 'python' | 'curl'>('js');
+  const [activeTab, setActiveTab] = useState<'js' | 'laravel' | 'php' | 'node' | 'python' | 'go' | 'dotnet' | 'curl'>('js');
   const [copied, setCopied] = useState(false);
 
   const keyDisplay = appKey || 'minha-chave-publica';
@@ -134,6 +134,56 @@ payload = {
 response = requests.post(url, json=payload, headers=headers)
 print(response.json())`,
 
+    go: `// Disparo nativo em Go (sem dependências)
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+)
+
+func main() {
+	payload, _ := json.Marshal(map[string]any{
+		"channel": "pedidos",
+		"event":   "novo-pedido",
+		"data": map[string]any{
+			"pedido_id": 1054,
+			"cliente":   "Maria Silva",
+		},
+	})
+
+	req, _ := http.NewRequest("POST", "${isTls ? 'https' : 'http'}://${hostDisplay}/api/v1/trigger", bytes.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer sua-chave-secreta")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+}`,
+
+    dotnet: `// Disparo nativo em C# (.NET 6/7/8+)
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+
+var client = new HttpClient();
+var payload = new
+{
+    channel = "pedidos",
+    event = "novo-pedido",
+    data = new { pedido_id = 1054, cliente = "Maria Silva" }
+};
+
+var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "sua-chave-secreta");
+
+var response = await client.PostAsync("${isTls ? 'https' : 'http'}://${hostDisplay}/api/v1/trigger", content);
+var result = await response.Content.ReadAsStringAsync();
+Console.WriteLine(result);`,
+
     curl: `curl -X POST "${isTls ? 'https' : 'http'}://${hostDisplay}/api/v1/trigger" \\
   -H "Content-Type: application/json" \\
   -H "X-App-Secret: sua-chave-secreta" \\
@@ -221,6 +271,26 @@ print(response.json())`,
             {t.snippets.tabPython}
           </button>
           <button
+            onClick={() => setActiveTab('go')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              activeTab === 'go'
+                ? 'bg-zinc-800 text-sky-400 font-semibold shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {t.snippets.tabGo}
+          </button>
+          <button
+            onClick={() => setActiveTab('dotnet')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              activeTab === 'dotnet'
+                ? 'bg-zinc-800 text-sky-400 font-semibold shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {t.snippets.tabDotnet}
+          </button>
+          <button
             onClick={() => setActiveTab('curl')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
               activeTab === 'curl'
@@ -257,6 +327,13 @@ print(response.json())`,
         <pre className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-xs font-mono text-zinc-200 overflow-x-auto leading-relaxed">
           <code>{snippets[activeTab]}</code>
         </pre>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
+        <span>💡 {t.snippets.viewAllSnippets}</span>
+        <code className="text-[11px] bg-secondary px-2 py-0.5 rounded border border-border font-mono text-foreground">
+          snippets/
+        </code>
       </div>
     </div>
   );

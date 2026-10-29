@@ -105,8 +105,11 @@ export interface Translations {
     tabPhp: string;
     tabNode: string;
     tabPython: string;
+    tabGo: string;
+    tabDotnet: string;
     tabCurl: string;
     copiedSnippet: string;
+    viewAllSnippets: string;
   };
   modal: {
     title: string;

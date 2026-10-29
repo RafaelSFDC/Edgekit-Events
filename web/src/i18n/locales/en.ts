@@ -105,8 +105,11 @@ export const en: Translations = {
     tabPhp: 'Pure PHP (cURL)',
     tabNode: 'Node.js',
     tabPython: 'Python',
+    tabGo: 'Go',
+    tabDotnet: 'C# (.NET)',
     tabCurl: 'cURL Terminal',
     copiedSnippet: 'Snippet copied to clipboard!',
+    viewAllSnippets: 'View all 7 zero-dependency clients in snippets/ folder',
   },
   modal: {
     title: 'Authenticate Console',

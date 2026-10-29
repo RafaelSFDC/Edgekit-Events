@@ -105,8 +105,11 @@ export const ptBR: Translations = {
     tabPhp: 'PHP Puro (cURL)',
     tabNode: 'Node.js',
     tabPython: 'Python',
+    tabGo: 'Go',
+    tabDotnet: 'C# (.NET)',
     tabCurl: 'cURL Terminal',
     copiedSnippet: 'Snippet copiado para a área de transferência!',
+    viewAllSnippets: 'Ver todos os 7 clientes zero-dependency na pasta snippets/',
   },
   modal: {
     title: 'Autenticar Console',
