@@ -2,12 +2,9 @@ import React, { useState } from 'react';
 import {
   Home,
   Terminal,
-  Send,
   Hash,
   Code2,
   Search,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from 'lucide-react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useI18n } from '../../i18n/context';
@@ -17,7 +14,6 @@ import {
   Sidebar,
   SidebarHeader,
   SidebarContent,
-  SidebarFooter,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -61,12 +57,6 @@ export const AppSidebar: React.FC = () => {
       label: t.sidebar.console,
       icon: <Terminal className="size-4 shrink-0" />,
       badge: events.length > 0 ? events.length : undefined,
-    },
-    {
-      to: '/simulator',
-      label: t.sidebar.simulator,
-      icon: <Send className="size-4 shrink-0" />,
-      badge: undefined,
     },
     {
       to: '/channels',
@@ -165,46 +155,6 @@ export const AppSidebar: React.FC = () => {
             })}
         </SidebarMenu>
       </SidebarContent>
-
-      {/* 3. Rodapé da Sidebar (Botão de Colapso estilo Cloudflare) */}
-      <SidebarFooter>
-        <div
-          className={cn(
-            'flex items-center',
-            isCollapsed ? 'justify-center w-full' : 'justify-between px-2'
-          )}
-        >
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <button
-                  type="button"
-                  onClick={toggleSidebar}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors mx-auto"
-                >
-                  {isCollapsed ? (
-                    <PanelLeftOpen className="size-4" />
-                  ) : (
-                    <PanelLeftClose className="size-4" />
-                  )}
-                </button>
-              }
-            />
-            <TooltipContent side={isCollapsed ? 'right' : 'top'}>
-              {isCollapsed ? t.sidebar.expand : t.sidebar.collapse}
-            </TooltipContent>
-          </Tooltip>
-          {!isCollapsed && (
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors select-none font-medium text-left"
-            >
-              {t.sidebar.collapse}
-            </button>
-          )}
-        </div>
-      </SidebarFooter>
     </Sidebar>
   );
 };

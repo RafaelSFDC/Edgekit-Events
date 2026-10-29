@@ -11,7 +11,7 @@ export const ChannelsPage: React.FC = () => {
 
   const handleSelectChannel = (channelName: string) => {
     navigate({
-      to: '/simulator',
+      to: '/console',
       search: { channel: channelName } as any,
     });
   };

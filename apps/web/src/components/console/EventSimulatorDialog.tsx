@@ -1,17 +1,25 @@
-import React, { useState } from 'react';
-import { Send, Sparkles, CheckCircle2, Code, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Send, Sparkles, CheckCircle2, Code, AlertTriangle, Radio } from 'lucide-react';
 import { toast } from 'sonner';
-import { useI18n } from '../i18n/context';
-import { useTriggerEvent } from '../hooks/api/use-trigger';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { useI18n } from '../../i18n/context';
+import { useTriggerEvent } from '../../hooks/api/use-trigger';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
 
-interface EventSimulatorProps {
+interface EventSimulatorDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   initialChannel?: string;
 }
 
@@ -50,7 +58,9 @@ const PRESETS = {
   },
 };
 
-export const EventSimulator: React.FC<EventSimulatorProps> = ({
+export const EventSimulatorDialog: React.FC<EventSimulatorDialogProps> = ({
+  open,
+  onOpenChange,
   initialChannel = 'pedidos',
 }) => {
   const { t } = useI18n();
@@ -62,6 +72,12 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
 
   const triggerMutation = useTriggerEvent();
   const loading = triggerMutation.isPending;
+
+  useEffect(() => {
+    if (initialChannel) {
+      setChannel(initialChannel);
+    }
+  }, [initialChannel]);
 
   const handleSelectPreset = (key: keyof typeof PRESETS) => {
     const preset = PRESETS[key];
@@ -93,27 +109,43 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
       return;
     }
 
-    triggerMutation.mutate({
-      channel: channel.trim(),
-      event: event.trim(),
-      data: parsedPayload,
-    });
+    triggerMutation.mutate(
+      {
+        channel: channel.trim(),
+        event: event.trim(),
+        data: parsedPayload,
+      },
+      {
+        onSuccess: (data) => {
+          toast.success(
+            `Evento disparado com sucesso! Entregue a ${data.delivered_to} clientes.`
+          );
+        },
+      }
+    );
   };
 
   return (
-    <Card className="shadow-xs">
-      <CardHeader className="pb-6">
-        <CardTitle className="text-base font-semibold text-foreground">
-          {t.simulator.title}
-        </CardTitle>
-        <CardDescription className="text-xs text-muted-foreground mt-0.5">
-          {t.simulator.subtitle}
-        </CardDescription>
-      </CardHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl p-6 sm:max-w-2xl">
+        <DialogHeader className="gap-2 pb-3 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              <Send className="size-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-base font-semibold text-foreground">
+                {t.simulator.title}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                {t.simulator.subtitle}
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
 
-      <CardContent className="flex flex-col gap-6">
-        {/* Preset template selector */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Templates Rápidos */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 mr-1">
             <Sparkles className="size-3.5 text-primary" />
             <span>{t.simulator.templatePreset}</span>
@@ -123,6 +155,7 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
             variant="outline"
             size="xs"
             onClick={() => handleSelectPreset('order')}
+            className="h-7 text-xs"
           >
             {t.simulator.presetOrder}
           </Button>
@@ -131,6 +164,7 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
             variant="outline"
             size="xs"
             onClick={() => handleSelectPreset('chat')}
+            className="h-7 text-xs"
           >
             {t.simulator.presetChat}
           </Button>
@@ -139,40 +173,41 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
             variant="outline"
             size="xs"
             onClick={() => handleSelectPreset('alert')}
+            className="h-7 text-xs"
           >
             {t.simulator.presetAlert}
           </Button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleTrigger} className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Formulário de Disparo */}
+        <form onSubmit={handleTrigger} className="flex flex-col gap-4 mt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="sim-channel" className="text-xs font-medium text-foreground">
+              <Label htmlFor="dlg-sim-channel" className="text-xs font-medium text-foreground">
                 {t.simulator.channelLabel}
               </Label>
               <Input
-                id="sim-channel"
+                id="dlg-sim-channel"
                 type="text"
                 value={channel}
                 onChange={(e) => setChannel(e.target.value)}
                 placeholder={t.simulator.channelPlaceholder}
-                className="font-mono text-xs"
+                className="font-mono text-xs h-8"
                 required
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="sim-event" className="text-xs font-medium text-foreground">
+              <Label htmlFor="dlg-sim-event" className="text-xs font-medium text-foreground">
                 {t.simulator.eventLabel}
               </Label>
               <Input
-                id="sim-event"
+                id="dlg-sim-event"
                 type="text"
                 value={event}
                 onChange={(e) => setEvent(e.target.value)}
                 placeholder={t.simulator.eventPlaceholder}
-                className="font-mono text-xs"
+                className="font-mono text-xs h-8"
                 required
               />
             </div>
@@ -180,7 +215,7 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="sim-payload" className="text-xs font-medium text-foreground">
+              <Label htmlFor="dlg-sim-payload" className="text-xs font-medium text-foreground">
                 {t.simulator.payloadLabel}
               </Label>
               <Button
@@ -188,30 +223,31 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
                 variant="ghost"
                 size="xs"
                 onClick={handleFormatJson}
-                className="text-xs text-primary hover:text-primary/80 gap-1"
+                className="text-xs text-primary hover:text-primary/80 gap-1 h-6 px-1.5"
               >
                 <Code className="size-3" />
                 <span>{t.simulator.formatJson}</span>
               </Button>
             </div>
             <Textarea
-              id="sim-payload"
+              id="dlg-sim-payload"
               value={payloadText}
               onChange={(e) => setPayloadText(e.target.value)}
-              rows={8}
-              className="bg-muted/60 font-mono text-xs text-foreground resize-y"
+              rows={7}
+              className="bg-muted/40 font-mono text-xs text-foreground resize-y"
               required
             />
           </div>
 
-          {/* Status message directly driven by TanStack Query mutation */}
+          {/* Feedback de sucesso ou erro */}
           {triggerMutation.isSuccess && (
             <Alert
-              className="p-3 text-xs flex items-center gap-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+              variant="success"
+              className="p-2.5 text-xs flex items-center gap-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
             >
               <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
               <AlertDescription className="font-medium text-inherit">
-                {t.simulator.triggerSuccess} (Entregue a {triggerMutation.data?.delivered_to || 0} conexões)
+                {t.simulator.triggerSuccess} (Entregue a {triggerMutation.data?.delivered_to || 0} cliente(s))
               </AlertDescription>
             </Alert>
           )}
@@ -219,7 +255,7 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
           {triggerMutation.isError && (
             <Alert
               variant="destructive"
-              className="p-3 text-xs flex items-center gap-2"
+              className="p-2.5 text-xs flex items-center gap-2"
             >
               <AlertTriangle className="size-4 shrink-0" />
               <AlertDescription className="font-medium text-inherit">
@@ -228,18 +264,27 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
             </Alert>
           )}
 
-          <div className="flex justify-end pt-2">
+          <DialogFooter className="mt-2 pt-3 border-t border-border flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+            >
+              Fechar
+            </Button>
             <Button
               type="submit"
               disabled={loading}
+              size="sm"
               className="gap-2"
             >
-              <Send className="size-4" />
+              <Send className="size-3.5" />
               <span>{loading ? t.simulator.triggering : t.simulator.triggerButton}</span>
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 };

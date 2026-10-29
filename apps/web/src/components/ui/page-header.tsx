@@ -5,20 +5,22 @@ export interface PageHeaderProps extends Omit<React.ComponentProps<"header">, "t
   title?: React.ReactNode;
   subtitle?: React.ReactNode;
   description?: React.ReactNode;
+  badge?: React.ReactNode;
   actions?: React.ReactNode;
   children?: React.ReactNode;
 }
 
 /**
  * Componente padronizado para o cabeçalho de todas as páginas da aplicação.
- * Exibe título e subtítulo alinhados à esquerda e consome automaticamente
+ * Exibe título, badge opcional e subtítulo alinhados à esquerda e consome automaticamente
  * botões e ações passados como `children` ou prop `actions`, posicionando-os no lado direito.
- * Baseado na implementação de Diorama Drive.
+ * Baseado na implementação do Diorama Care.
  */
 export function PageHeader({
   title,
   subtitle,
   description,
+  badge,
   actions,
   children,
   className,
@@ -34,16 +36,20 @@ export function PageHeader({
       )}
       {...props}
     >
-      {(title || resolvedSubtitle) && (
+      {(title || resolvedSubtitle || badge) && (
         <div className="space-y-1">
-          {title &&
-            (typeof title === "string" ? (
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                {title}
-              </h1>
-            ) : (
-              title
-            ))}
+          {title && (
+            <div className="flex items-center gap-2">
+              {typeof title === "string" ? (
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  {title}
+                </h1>
+              ) : (
+                title
+              )}
+              {badge}
+            </div>
+          )}
           {resolvedSubtitle &&
             (typeof resolvedSubtitle === "string" ? (
               <p className="text-base text-muted-foreground mt-1 leading-relaxed">

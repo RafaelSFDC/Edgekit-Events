@@ -61,12 +61,11 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
         </div>
         <Button
           variant="outline"
-          size="sm"
           onClick={handleRefreshClick}
           disabled={isRefreshing}
           className="gap-1.5"
         >
-          <RefreshCw className={`size-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           <span>{t.channels.refresh}</span>
         </Button>
       </CardHeader>

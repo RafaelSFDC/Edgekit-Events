@@ -35,7 +35,7 @@ export const OverviewPage: React.FC = () => {
 
       {/* 2. Atalhos para as demais páginas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Console ao Vivo */}
+        {/* Card 1: Console de eventos */}
         <Card className="hover:border-primary/50 transition-all hover:shadow-xs group">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -75,7 +75,7 @@ export const OverviewPage: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
-            <Link to="/simulator" className="block w-full">
+            <Link to="/console" search={{ simulate: true } as any} className="block w-full">
               <Button variant="outline" size="sm" className="w-full justify-between text-xs cursor-pointer">
                 <span>Disparar</span>
                 <ArrowRight className="size-3" />

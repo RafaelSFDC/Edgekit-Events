@@ -51,8 +51,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ wsStatus }) => {
     switch (pathname) {
       case '/console':
         return t.breadcrumbs.console;
-      case '/simulator':
-        return t.breadcrumbs.simulator;
       case '/channels':
         return t.breadcrumbs.channels;
       case '/snippets':

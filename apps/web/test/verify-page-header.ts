@@ -14,11 +14,11 @@ async function testPageHeader() {
   // 1. Título e subtítulo simples
   const html1 = renderToStaticMarkup(
     React.createElement(PageHeader, {
-      title: 'Console ao Vivo',
+      title: 'Console de eventos',
       subtitle: 'Stream WebSocket de eventos em tempo real',
     })
   );
-  assert(html1.includes('Console ao Vivo'), 'Deve renderizar o título');
+  assert(html1.includes('Console de eventos'), 'Deve renderizar o título');
   assert(html1.includes('Stream WebSocket de eventos em tempo real'), 'Deve renderizar o subtítulo');
   assert(!html1.includes('shrink-0'), 'Não deve ter container de ações quando não houver botões');
   console.log('✅ Renderização de título e subtítulo validada!');

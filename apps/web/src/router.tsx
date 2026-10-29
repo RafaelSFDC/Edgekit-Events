@@ -10,7 +10,6 @@ import { DashboardLayout } from './components/layout/DashboardLayout';
 import { LoginPage } from './pages/LoginPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { ConsolePage } from './pages/ConsolePage';
-import { SimulatorPage } from './pages/SimulatorPage';
 import { ChannelsPage } from './pages/ChannelsPage';
 import { SnippetsPage } from './pages/SnippetsPage';
 import { useAuth } from './context/auth-context';
@@ -74,12 +73,6 @@ const consoleRoute = createRoute({
   component: ConsolePage,
 });
 
-const simulatorRoute = createRoute({
-  getParentRoute: () => dashboardRoute,
-  path: '/simulator',
-  component: SimulatorPage,
-});
-
 const channelsRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: '/channels',
@@ -98,7 +91,6 @@ const routeTree = rootRoute.addChildren([
   dashboardRoute.addChildren([
     indexRoute,
     consoleRoute,
-    simulatorRoute,
     channelsRoute,
     snippetsRoute,
   ]),
