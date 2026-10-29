@@ -5,9 +5,7 @@ import {
   Sun,
   Moon,
   LogOut,
-  RefreshCw,
   User,
-  ChevronDown,
 } from 'lucide-react';
 import { useI18n } from '../../i18n/context';
 import { useTheme } from '../../theme/context';
@@ -15,7 +13,6 @@ import { useAuth } from '../../context/auth-context';
 import { useSidebar, SidebarTrigger } from '@/components/ui/sidebar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -38,10 +35,9 @@ import {
 
 interface TopHeaderProps {
   wsStatus: 'connected' | 'connecting' | 'disconnected';
-  onReconnectWs: () => void;
 }
 
-export const TopHeader: React.FC<TopHeaderProps> = ({ wsStatus, onReconnectWs }) => {
+export const TopHeader: React.FC<TopHeaderProps> = ({ wsStatus }) => {
   const { locale, setLocale, t } = useI18n();
   const { resolvedTheme, toggleTheme } = useTheme();
   const { isAuthenticated, openModal, logout } = useAuth();
@@ -134,49 +130,35 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ wsStatus, onReconnectWs })
 
         {/* Direita: Status do WebSocket + Avatar do Usuário */}
         <div className="ml-auto flex items-center gap-2 sm:gap-3 shrink-0">
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Badge
-                  variant="outline"
-                  onClick={wsStatus === 'disconnected' ? onReconnectWs : undefined}
-                  className={cn(
-                    'flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium transition-colors cursor-default',
-                    wsStatus === 'connected' &&
-                      'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10',
-                    wsStatus === 'connecting' &&
-                      'border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10',
-                    wsStatus === 'disconnected' &&
-                      'border-destructive/30 text-destructive bg-destructive/10 cursor-pointer hover:bg-destructive/20'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'size-1.5 rounded-full',
-                      wsStatus === 'connected' && 'bg-emerald-500 dark:bg-emerald-400 animate-ping',
-                      wsStatus === 'connecting' && 'bg-amber-500 dark:bg-amber-400 animate-pulse',
-                      wsStatus === 'disconnected' && 'bg-destructive'
-                    )}
-                  />
-                  <span>
-                    {wsStatus === 'connected'
-                      ? (locale === 'pt-BR' ? 'Ao vivo' : 'Live')
-                      : wsStatus === 'connecting'
-                      ? (locale === 'pt-BR' ? 'Conectando...' : 'Connecting...')
-                      : (locale === 'pt-BR' ? 'Desconectado' : 'Disconnected')}
-                  </span>
-                  {wsStatus === 'disconnected' && <RefreshCw className="size-2.5 ml-0.5 animate-spin" />}
-                </Badge>
-              }
-            />
-            {wsStatus === 'disconnected' && (
-              <TooltipContent>
-                {!isAuthenticated
-                  ? (locale === 'pt-BR' ? 'Conectar para ativar WebSocket' : 'Sign in to enable WebSocket')
-                  : (locale === 'pt-BR' ? 'Reconectar WebSocket' : 'Reconnect WebSocket')}
-              </TooltipContent>
+          {/* Status do WebSocket: desconectado (vermelho), conectando (amarelo), conectado (verde) */}
+          <Badge
+            variant="outline"
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-medium transition-colors select-none',
+              wsStatus === 'connected' &&
+                'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10',
+              wsStatus === 'connecting' &&
+                'border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10',
+              wsStatus === 'disconnected' &&
+                'border-destructive/30 text-destructive bg-destructive/10'
             )}
-          </Tooltip>
+          >
+            <span
+              className={cn(
+                'size-1.5 rounded-full shrink-0',
+                wsStatus === 'connected' && 'bg-emerald-500 dark:bg-emerald-400',
+                wsStatus === 'connecting' && 'bg-amber-500 dark:bg-amber-400 animate-pulse',
+                wsStatus === 'disconnected' && 'bg-destructive'
+              )}
+            />
+            <span>
+              {wsStatus === 'connected'
+                ? (locale === 'pt-BR' ? 'Conectado' : 'Connected')
+                : wsStatus === 'connecting'
+                ? (locale === 'pt-BR' ? 'Conectando...' : 'Connecting...')
+                : (locale === 'pt-BR' ? 'Desconectado' : 'Disconnected')}
+            </span>
+          </Badge>
 
           {/* Avatar e Menu do Usuário */}
           <DropdownMenu>

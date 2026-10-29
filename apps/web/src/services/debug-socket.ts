@@ -44,6 +44,13 @@ class DebugSocketManager {
   }
 
   connect(): void {
+    // Se o usuário estiver explicitamente não autenticado, nem sequer tenta rodar nada
+    const authState = queryClient.getQueryData<{ authenticated: boolean }>(queryKeys.auth.me());
+    if (authState && authState.authenticated === false) {
+      this.disconnect();
+      return;
+    }
+
     this.shouldConnect = true;
 
     // Prevent duplicate socket initialization (0: CONNECTING, 1: OPEN)
@@ -147,6 +154,13 @@ class DebugSocketManager {
 
   private scheduleReconnect(): void {
     if (this.reconnectTimer) return;
+
+    // Se o usuário não está autenticado, nem agenda reconexão
+    const authState = queryClient.getQueryData<{ authenticated: boolean }>(queryKeys.auth.me());
+    if (authState && authState.authenticated === false) {
+      this.disconnect();
+      return;
+    }
 
     if (this.retryCount >= this.maxRetries) {
       this.shouldConnect = false;

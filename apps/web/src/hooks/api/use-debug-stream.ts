@@ -8,9 +8,8 @@ export function useDebugStream(isPaused = false): {
 } {
   const auth = useOptionalAuth();
   const isAuthenticated = auth ? auth.isAuthenticated : true;
-  const openModal = auth?.openModal;
 
-  const wsStatus = useSyncExternalStore(
+  const rawStatus = useSyncExternalStore(
     (onStoreChange) => debugSocketManager.subscribe(onStoreChange),
     () => debugSocketManager.getStatus()
   );
@@ -19,6 +18,7 @@ export function useDebugStream(isPaused = false): {
     debugSocketManager.setPaused(isPaused);
   }, [isPaused]);
 
+  // Se não estiver autenticado, desconecta imediatamente e não tenta conectar
   useEffect(() => {
     if (isAuthenticated) {
       debugSocketManager.connect();
@@ -28,12 +28,12 @@ export function useDebugStream(isPaused = false): {
   }, [isAuthenticated]);
 
   const reconnect = useCallback(() => {
-    if (!isAuthenticated) {
-      openModal?.();
-      return;
+    if (isAuthenticated) {
+      debugSocketManager.reconnect();
     }
-    debugSocketManager.reconnect();
-  }, [isAuthenticated, openModal]);
+  }, [isAuthenticated]);
+
+  const wsStatus: DebugConnectionStatus = isAuthenticated ? rawStatus : 'disconnected';
 
   return { wsStatus, reconnect };
 }

@@ -7,13 +7,13 @@ import { PasskeyModal } from '../PasskeyModal';
 import { useDebugStream } from '../../hooks/api/use-debug-stream';
 
 export const DashboardLayout: React.FC = () => {
-  const { wsStatus, reconnect } = useDebugStream();
+  const { wsStatus } = useDebugStream();
 
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen w-full bg-background text-foreground flex flex-col">
         {/* Top Header estilo Cloudflare bipartido com Breadcrumbs integrados */}
-        <TopHeader wsStatus={wsStatus} onReconnectWs={reconnect} />
+        <TopHeader wsStatus={wsStatus} />
 
         {/* Corpo: Sidebar + Main Content Canvas */}
         <div className="flex flex-1 w-full">
