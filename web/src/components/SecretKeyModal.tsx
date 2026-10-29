@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
-import { Key, ShieldAlert, CheckCircle2, X, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Key, ShieldAlert, CheckCircle2, X, Eye, EyeOff, LogOut, Lock } from 'lucide-react';
 import { useI18n } from '../i18n/context';
 
 interface SecretKeyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentSecret: string;
-  onSaveSecret: (secret: string, appData?: { id: string; key: string }) => void;
-  onClearSecret: () => void;
+  isAuthenticated: boolean;
+  onLoginSuccess: (appData?: { id: string; key: string }) => void;
+  onLogoutSuccess: () => void;
 }
 
 export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
   isOpen,
   onClose,
-  currentSecret,
-  onSaveSecret,
-  onClearSecret,
+  isAuthenticated,
+  onLoginSuccess,
+  onLogoutSuccess,
 }) => {
   const { t } = useI18n();
-  const [secretInput, setSecretInput] = useState(currentSecret);
+  const [secretInput, setSecretInput] = useState('');
   const [showSecret, setShowSecret] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +26,7 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleVerify = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!secretInput.trim()) return;
 
@@ -35,21 +35,23 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
     setSuccess(false);
 
     try {
-      const res = await fetch('/api/v1/verify-secret', {
+      const res = await fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ secret: secretInput.trim() }),
       });
 
       const data = await res.json();
-      if (res.ok && data.valid) {
+      if (res.ok && data.authenticated) {
         setSuccess(true);
         setTimeout(() => {
-          onSaveSecret(secretInput.trim(), data.app);
+          onLoginSuccess(data.app);
+          setSecretInput('');
           onClose();
-        }, 600);
+        }, 500);
       } else {
         setError(data.error || t.modal.invalidSecret);
       }
@@ -60,14 +62,25 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
     }
   };
 
-  const handleDisconnect = () => {
-    onClearSecret();
-    setSecretInput('');
-    onClose();
+  const handleLogout = async () => {
+    setLoading(true);
+    try {
+      await fetch('/api/v1/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      onLogoutSuccess();
+      setSecretInput('');
+      onClose();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-card border border-border w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
         {/* Close Button */}
         <button
@@ -80,15 +93,18 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
         {/* Header */}
         <div className="flex items-center space-x-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
-            <Key className="w-5 h-5" />
+            <Lock className="w-5 h-5" />
           </div>
           <div>
             <h3 className="text-base font-semibold text-foreground">
               {t.modal.title}
             </h3>
-            <p className="text-xs text-muted-foreground">
-              Cloudflare Workers Environment
-            </p>
+            <div className="flex items-center space-x-1.5 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <p className="text-[11px] font-semibold text-emerald-400">
+                Sessão Segura com Cookie HttpOnly
+              </p>
+            </div>
           </div>
         </div>
 
@@ -97,7 +113,7 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
         </p>
 
         {/* Form */}
-        <form onSubmit={handleVerify} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-foreground mb-1.5">
               {t.modal.inputLabel}
@@ -122,8 +138,9 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
                 {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1.5">
-              {t.modal.savedNote}
+            <p className="text-[11px] text-zinc-400 mt-2 bg-secondary/50 p-2.5 rounded-lg border border-border/80 flex items-start space-x-2">
+              <span className="text-sky-400 font-bold shrink-0">🛡️</span>
+              <span>{t.modal.savedNote}</span>
             </p>
           </div>
 
@@ -144,13 +161,14 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-2">
-            {currentSecret ? (
+            {isAuthenticated ? (
               <button
                 type="button"
-                onClick={handleDisconnect}
+                onClick={handleLogout}
+                disabled={loading}
                 className="flex items-center space-x-1.5 px-3 py-2 text-xs font-medium text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
               >
-                <Trash2 className="w-4 h-4" />
+                <LogOut className="w-4 h-4" />
                 <span>{t.modal.disconnect}</span>
               </button>
             ) : (

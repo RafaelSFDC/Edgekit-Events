@@ -10,14 +10,10 @@ import { useI18n } from './i18n/context';
 import type { DebugEvent, AppStats } from './types';
 import { Terminal, Send, Hash, Code2 } from 'lucide-react';
 
-const SECRET_STORAGE_KEY = 'edgekit_events_secret';
-
 export const App: React.FC = () => {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'console' | 'simulator' | 'channels' | 'snippets'>('console');
-  const [secret, setSecret] = useState<string>(() => {
-    return localStorage.getItem(SECRET_STORAGE_KEY) || '';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isSecretModalOpen, setIsSecretModalOpen] = useState(false);
 
   // App & stats state
@@ -41,11 +37,37 @@ export const App: React.FC = () => {
   const isPausedRef = useRef(isPaused);
   isPausedRef.current = isPaused;
 
-  // Fetch initial app info and stats
+  // 1. Verifica se já existe sessão ativa via Cookie HttpOnly no navegador
+  const checkSession = useCallback(async () => {
+    try {
+      const res = await fetch('/api/v1/auth/me', {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+          if (data.app) {
+            setAppId(data.app.id);
+            setAppKey(data.app.key);
+          }
+          return true;
+        }
+      }
+      setIsAuthenticated(false);
+      return false;
+    } catch {
+      setIsAuthenticated(false);
+      return false;
+    }
+  }, []);
+
+  // 2. Busca métricas e status dos canais
   const fetchStats = useCallback(async () => {
     try {
-      const url = secret ? `/api/v1/stats?secret=${encodeURIComponent(secret)}` : '/api/v1/stats';
-      const res = await fetch(url);
+      const res = await fetch('/api/v1/stats', {
+        credentials: 'include',
+      });
       if (res.ok) {
         const data = await res.json();
         setStats(data);
@@ -57,29 +79,31 @@ export const App: React.FC = () => {
     } catch (err) {
       console.error('Failed to fetch stats:', err);
     }
-  }, [secret]);
+  }, []);
 
   useEffect(() => {
+    checkSession();
     fetchStats();
     const interval = setInterval(fetchStats, 10000);
     return () => clearInterval(interval);
-  }, [fetchStats]);
+  }, [checkSession, fetchStats]);
 
-  // Connect to Live Debug WebSocket
+  // 3. Conecta ao WebSocket do Live Debug Console
+  // O navegador envia automaticamente o Cookie HttpOnly durante o handshake WebSocket (sem expor secrets na URL!)
   const connectDebugWs = useCallback(() => {
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
 
-    if (!secret) {
+    if (!isAuthenticated) {
       setWsStatus('disconnected');
       return;
     }
 
     setWsStatus('connecting');
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/api/v1/debug/ws?secret=${encodeURIComponent(secret)}`;
+    const wsUrl = `${protocol}//${window.location.host}/api/v1/debug/ws`;
 
     try {
       const ws = new WebSocket(wsUrl);
@@ -108,8 +132,7 @@ export const App: React.FC = () => {
             timestamp: raw.timestamp || Date.now(),
           };
 
-          setEvents((prev) => [newEvent, ...prev.slice(0, 499)]); // Keep last 500 events
-          // Refresh stats when events happen
+          setEvents((prev) => [newEvent, ...prev.slice(0, 499)]); // Mantém os últimos 500 eventos
           fetchStats();
         } catch (e) {
           console.error('Error parsing debug frame:', e);
@@ -126,7 +149,7 @@ export const App: React.FC = () => {
     } catch {
       setWsStatus('disconnected');
     }
-  }, [secret, fetchStats]);
+  }, [isAuthenticated, fetchStats]);
 
   useEffect(() => {
     connectDebugWs();
@@ -137,9 +160,8 @@ export const App: React.FC = () => {
     };
   }, [connectDebugWs]);
 
-  const handleSaveSecret = (newSecret: string, appData?: { id: string; key: string }) => {
-    setSecret(newSecret);
-    localStorage.setItem(SECRET_STORAGE_KEY, newSecret);
+  const handleLoginSuccess = (appData?: { id: string; key: string }) => {
+    setIsAuthenticated(true);
     if (appData) {
       setAppId(appData.id);
       setAppKey(appData.key);
@@ -147,9 +169,8 @@ export const App: React.FC = () => {
     fetchStats();
   };
 
-  const handleClearSecret = () => {
-    setSecret('');
-    localStorage.removeItem(SECRET_STORAGE_KEY);
+  const handleLogoutSuccess = () => {
+    setIsAuthenticated(false);
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -167,7 +188,7 @@ export const App: React.FC = () => {
       {/* Top Navigation */}
       <Navbar
         wsStatus={wsStatus}
-        hasSecret={Boolean(secret)}
+        isAuthenticated={isAuthenticated}
         appId={appId}
         appKey={appKey}
         onOpenSecretModal={() => setIsSecretModalOpen(true)}
@@ -257,8 +278,7 @@ export const App: React.FC = () => {
 
         {activeTab === 'simulator' && (
           <EventSimulator
-            hasSecret={Boolean(secret)}
-            currentSecret={secret}
+            isAuthenticated={isAuthenticated}
             initialChannel={simulatorChannel}
             onOpenSecretModal={() => setIsSecretModalOpen(true)}
             onEventDispatched={fetchStats}
@@ -286,9 +306,9 @@ export const App: React.FC = () => {
       <SecretKeyModal
         isOpen={isSecretModalOpen}
         onClose={() => setIsSecretModalOpen(false)}
-        currentSecret={secret}
-        onSaveSecret={handleSaveSecret}
-        onClearSecret={handleClearSecret}
+        isAuthenticated={isAuthenticated}
+        onLoginSuccess={handleLoginSuccess}
+        onLogoutSuccess={handleLogoutSuccess}
       />
     </div>
   );

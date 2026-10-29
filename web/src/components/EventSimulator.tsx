@@ -3,8 +3,7 @@ import { Send, Sparkles, CheckCircle2, AlertTriangle, Key, Code } from 'lucide-r
 import { useI18n } from '../i18n/context';
 
 interface EventSimulatorProps {
-  hasSecret: boolean;
-  currentSecret: string;
+  isAuthenticated: boolean;
   initialChannel?: string;
   onOpenSecretModal: () => void;
   onEventDispatched?: () => void;
@@ -46,8 +45,7 @@ const PRESETS = {
 };
 
 export const EventSimulator: React.FC<EventSimulatorProps> = ({
-  hasSecret,
-  currentSecret,
+  isAuthenticated,
   initialChannel = 'pedidos',
   onOpenSecretModal,
   onEventDispatched,
@@ -85,7 +83,7 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
     e.preventDefault();
     if (!channel.trim() || !event.trim()) return;
 
-    if (!hasSecret || !currentSecret) {
+    if (!isAuthenticated) {
       onOpenSecretModal();
       return;
     }
@@ -102,12 +100,13 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
     setStatus(null);
 
     try {
+      // Dispara via sessão autenticada com Cookie HttpOnly automático
       const res = await fetch('/api/v1/trigger', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-App-Secret': currentSecret,
         },
+        credentials: 'include',
         body: JSON.stringify({
           channel: channel.trim(),
           event: event.trim(),
@@ -149,8 +148,8 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
         </p>
       </div>
 
-      {/* Warning if no secret connected */}
-      {!hasSecret && (
+      {/* Warning if not authenticated with HttpOnly cookie */}
+      {!isAuthenticated && (
         <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
           <div className="flex items-center space-x-3 text-amber-400 text-xs">
             <AlertTriangle className="w-5 h-5 shrink-0" />

@@ -1,17 +1,22 @@
 import { Hono } from "hono";
+import { getCookie } from "hono/cookie";
 import type { Env } from "../types/env";
 import type { SimpleTriggerPayload } from "../types/pusher";
 import { findApp, getApps, verifySimpleBearerAuth } from "../services/auth";
+import { AUTH_COOKIE_NAME } from "./debug";
 
 export const simpleApiRoute = new Hono<{ Bindings: Env }>();
 
 /**
- * Simplified REST trigger endpoint for PHP, shared hosting, and curl
+ * Simplified REST trigger endpoint for PHP, shared hosting, curl, and Web Dashboard
  * POST /api/v1/trigger
  */
 simpleApiRoute.post("/api/v1/trigger", async (c) => {
   const authHeader = c.req.header("Authorization");
   const querySecret = c.req.query("secret");
+  const headerSecret = c.req.header("X-App-Secret");
+  const cookieSecret = getCookie(c, AUTH_COOKIE_NAME);
+  const secretCandidate = querySecret || headerSecret || cookieSecret;
 
   let body: (SimpleTriggerPayload & { app_id?: string; channels?: string[] }) | null = null;
   try {
@@ -31,7 +36,7 @@ simpleApiRoute.post("/api/v1/trigger", async (c) => {
   // If no app_id provided, attempt to authenticate against any matching configured app
   if (!targetApp) {
     for (const candidate of apps) {
-      if (verifySimpleBearerAuth(candidate, authHeader, querySecret)) {
+      if (verifySimpleBearerAuth(candidate, authHeader, secretCandidate)) {
         targetApp = candidate;
         break;
       }
@@ -48,12 +53,12 @@ simpleApiRoute.post("/api/v1/trigger", async (c) => {
   }
 
   // Validate authentication
-  const isAuthenticated = verifySimpleBearerAuth(targetApp, authHeader, querySecret);
+  const isAuthenticated = verifySimpleBearerAuth(targetApp, authHeader, secretCandidate);
   if (!isAuthenticated) {
     return c.json(
       {
         error:
-          "Unauthorized. Pass Authorization: Bearer <APP_SECRET> or ?secret=<APP_SECRET>",
+          "Unauthorized. Pass Authorization: Bearer <APP_SECRET>, X-App-Secret, or connect with HttpOnly session cookie",
       },
       401
     );

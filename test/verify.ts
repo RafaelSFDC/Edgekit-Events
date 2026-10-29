@@ -99,8 +99,8 @@ async function runTests() {
   assert.strictEqual(verifySimpleBearerAuth(app, "Bearer wrong-secret"), false);
   console.log("✅ Simple Bearer Auth validada!");
 
-  // 7. Teste Rotas Hono & Auth do Dashboard
-  console.log("Testing Hono Routes & Dashboard Auth...");
+  // 7. Teste Rotas Hono & Auth com Cookie HttpOnly do Dashboard
+  console.log("Testing Hono Routes & HttpOnly Cookie Auth...");
   const mockEnv: any = {
     DEFAULT_APP_ID: "app-default",
     DEFAULT_APP_KEY: "key-default",
@@ -113,8 +113,9 @@ async function runTests() {
   const infoRes = await healthRoute.request("/api/info", {}, mockEnv);
   assert.strictEqual(infoRes.status, 200);
 
-  const verifySuccessRes = await debugRoute.request(
-    "/api/v1/verify-secret",
+  // Login via POST /api/v1/auth/login
+  const loginRes = await debugRoute.request(
+    "/api/v1/auth/login",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -122,22 +123,47 @@ async function runTests() {
     },
     mockEnv
   );
-  assert.strictEqual(verifySuccessRes.status, 200);
-  const verifySuccessData: any = await verifySuccessRes.json();
-  assert.strictEqual(verifySuccessData.valid, true);
-  assert.strictEqual(verifySuccessData.app.id, "app-default");
+  assert.strictEqual(loginRes.status, 200);
+  const loginData: any = await loginRes.json();
+  assert.strictEqual(loginData.authenticated, true);
+  assert.strictEqual(loginData.app.id, "app-default");
 
-  const verifyFailRes = await debugRoute.request(
-    "/api/v1/verify-secret",
+  // Verifica se o cookie HttpOnly foi enviado no cabeçalho Set-Cookie
+  const setCookieHeader = loginRes.headers.get("Set-Cookie");
+  assert.ok(setCookieHeader, "Deve definir cabeçalho Set-Cookie");
+  assert.ok(setCookieHeader.includes("edgekit_events_session="), "Cookie deve conter o nome edgekit_events_session");
+  assert.ok(setCookieHeader.toLowerCase().includes("httponly"), "Cookie DEVE ser HttpOnly");
+
+  // Extrai o cookie para testar rota protegida GET /api/v1/auth/me
+  const cookieValue = setCookieHeader.split(";")[0];
+  const meRes = await debugRoute.request(
+    "/api/v1/auth/me",
     {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ secret: "wrong-secret" }),
+      method: "GET",
+      headers: { Cookie: cookieValue },
     },
     mockEnv
   );
-  assert.strictEqual(verifyFailRes.status, 401);
-  console.log("✅ Rotas Hono e Auth do Dashboard validadas!");
+  assert.strictEqual(meRes.status, 200);
+  const meData: any = await meRes.json();
+  assert.strictEqual(meData.authenticated, true);
+  assert.strictEqual(meData.app.id, "app-default");
+
+  // Testa falha sem o cookie
+  const unauthRes = await debugRoute.request("/api/v1/auth/me", {}, mockEnv);
+  assert.strictEqual(unauthRes.status, 401);
+
+  // Testa Logout
+  const logoutRes = await debugRoute.request(
+    "/api/v1/auth/logout",
+    { method: "POST" },
+    mockEnv
+  );
+  assert.strictEqual(logoutRes.status, 200);
+  const logoutCookie = logoutRes.headers.get("Set-Cookie");
+  assert.ok(logoutCookie, "Logout deve atualizar Set-Cookie para expirar");
+
+  console.log("✅ Rotas Hono e Auth com Cookie HttpOnly validadas com sucesso!");
 
   console.log("\n🎉 TODOS OS TESTES PASSARAM COM SUCESSO!");
 }

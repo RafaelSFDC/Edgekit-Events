@@ -4,7 +4,7 @@ import { useI18n } from '../i18n/context';
 
 interface NavbarProps {
   wsStatus: 'connected' | 'connecting' | 'disconnected';
-  hasSecret: boolean;
+  isAuthenticated: boolean;
   appId?: string;
   appKey?: string;
   onOpenSecretModal: () => void;
@@ -13,7 +13,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   wsStatus,
-  hasSecret,
+  isAuthenticated,
   appId,
   appKey,
   onOpenSecretModal,
@@ -86,20 +86,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
 
-          {/* App Secret Trigger Button */}
+          {/* App Secret / Session Trigger Button */}
           <button
             onClick={onOpenSecretModal}
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
-              hasSecret
+              isAuthenticated
                 ? 'bg-sky-500/10 text-sky-400 border-sky-500/30 hover:bg-sky-500/20'
                 : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700'
             }`}
           >
-            {hasSecret ? (
+            {isAuthenticated ? (
               <>
                 <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-                <span className="hidden sm:inline">Secret Ativa</span>
-                <span className="sm:hidden">Secret</span>
+                <span className="hidden sm:inline">Sessão Segura Ativa</span>
+                <span className="sm:hidden">Sessão</span>
               </>
             ) : (
               <>

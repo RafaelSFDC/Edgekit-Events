@@ -12,11 +12,12 @@ export { AppSessionDO } from "./durable-objects/AppSessionDO";
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Enable CORS for web clients and cross-origin REST calls
+// Enable CORS for web clients and cross-origin REST calls with Cookie support
 app.use(
   "*",
   cors({
-    origin: "*",
+    origin: (origin) => origin || "*",
+    credentials: true,
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-App-Secret"],
   })
