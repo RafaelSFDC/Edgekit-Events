@@ -9,23 +9,30 @@ import { SecretKeyModal } from './components/SecretKeyModal';
 import { useI18n } from './i18n/context';
 import type { DebugEvent, AppStats } from './types';
 import { Terminal, Send, Hash, Code2 } from 'lucide-react';
+import { useAuth, useStatsQuery, queryKeys } from './hooks/api';
+import { useQueryClient } from '@tanstack/react-query';
+
+const defaultStats: AppStats = {
+  active_sockets: 0,
+  channels_count: 0,
+  channels: {},
+  debug_listeners: 0,
+  timestamp: Date.now(),
+};
 
 export const App: React.FC = () => {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'console' | 'simulator' | 'channels' | 'snippets'>('console');
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isSecretModalOpen, setIsSecretModalOpen] = useState(false);
 
-  // App & stats state
-  const [appId, setAppId] = useState<string>('app-default');
-  const [appKey, setAppKey] = useState<string>('key-default');
-  const [stats, setStats] = useState<AppStats>({
-    active_sockets: 0,
-    channels_count: 0,
-    channels: {},
-    debug_listeners: 0,
-    timestamp: Date.now(),
-  });
+  // TanStack Query domain hooks
+  const { isAuthenticated, app } = useAuth();
+  const statsQuery = useStatsQuery({ refetchInterval: 10000 });
+
+  const stats = statsQuery.data ?? defaultStats;
+  const appId = app?.id ?? statsQuery.data?.app?.id ?? 'app-default';
+  const appKey = app?.key ?? statsQuery.data?.app?.key ?? 'key-default';
 
   // Events & Debug Console state
   const [events, setEvents] = useState<DebugEvent[]>([]);
@@ -37,59 +44,8 @@ export const App: React.FC = () => {
   const isPausedRef = useRef(isPaused);
   isPausedRef.current = isPaused;
 
-  // 1. Verifica se já existe sessão ativa via Cookie HttpOnly no navegador
-  const checkSession = useCallback(async () => {
-    try {
-      const res = await fetch('/api/v1/auth/me', {
-        credentials: 'include',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.authenticated) {
-          setIsAuthenticated(true);
-          if (data.app) {
-            setAppId(data.app.id);
-            setAppKey(data.app.key);
-          }
-          return true;
-        }
-      }
-      setIsAuthenticated(false);
-      return false;
-    } catch {
-      setIsAuthenticated(false);
-      return false;
-    }
-  }, []);
-
-  // 2. Busca métricas e status dos canais
-  const fetchStats = useCallback(async () => {
-    try {
-      const res = await fetch('/api/v1/stats', {
-        credentials: 'include',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data);
-        if (data.app) {
-          setAppId(data.app.id);
-          setAppKey(data.app.key);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch stats:', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    checkSession();
-    fetchStats();
-    const interval = setInterval(fetchStats, 10000);
-    return () => clearInterval(interval);
-  }, [checkSession, fetchStats]);
-
-  // 3. Conecta ao WebSocket do Live Debug Console
-  // O navegador envia automaticamente o Cookie HttpOnly durante o handshake WebSocket (sem expor secrets na URL!)
+  // Conecta ao WebSocket do Live Debug Console
+  // O navegador envia automaticamente o Cookie HttpOnly durante o handshake WebSocket
   const connectDebugWs = useCallback(() => {
     if (wsRef.current) {
       wsRef.current.close();
@@ -133,7 +89,9 @@ export const App: React.FC = () => {
           };
 
           setEvents((prev) => [newEvent, ...prev.slice(0, 499)]); // Mantém os últimos 500 eventos
-          fetchStats();
+
+          // Invalida a query de stats em tempo real para atualizar contadores e canais
+          queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
         } catch (e) {
           console.error('Error parsing debug frame:', e);
         }
@@ -149,7 +107,7 @@ export const App: React.FC = () => {
     } catch {
       setWsStatus('disconnected');
     }
-  }, [isAuthenticated, fetchStats]);
+  }, [isAuthenticated, queryClient]);
 
   useEffect(() => {
     connectDebugWs();
@@ -160,17 +118,7 @@ export const App: React.FC = () => {
     };
   }, [connectDebugWs]);
 
-  const handleLoginSuccess = (appData?: { id: string; key: string }) => {
-    setIsAuthenticated(true);
-    if (appData) {
-      setAppId(appData.id);
-      setAppKey(appData.key);
-    }
-    fetchStats();
-  };
-
   const handleLogoutSuccess = () => {
-    setIsAuthenticated(false);
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -281,14 +229,15 @@ export const App: React.FC = () => {
             isAuthenticated={isAuthenticated}
             initialChannel={simulatorChannel}
             onOpenSecretModal={() => setIsSecretModalOpen(true)}
-            onEventDispatched={fetchStats}
+            onEventDispatched={() => statsQuery.refetch()}
           />
         )}
 
         {activeTab === 'channels' && (
           <ChannelExplorer
             channels={stats.channels || {}}
-            onRefresh={fetchStats}
+            onRefresh={() => statsQuery.refetch()}
+            isRefreshing={statsQuery.isFetching}
             onSelectChannelForTrigger={handleSelectChannelForTrigger}
           />
         )}
@@ -307,7 +256,6 @@ export const App: React.FC = () => {
         isOpen={isSecretModalOpen}
         onClose={() => setIsSecretModalOpen(false)}
         isAuthenticated={isAuthenticated}
-        onLoginSuccess={handleLoginSuccess}
         onLogoutSuccess={handleLogoutSuccess}
       />
     </div>

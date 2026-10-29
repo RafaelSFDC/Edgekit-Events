@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Key, ShieldAlert, CheckCircle2, X, Eye, EyeOff, LogOut, Lock } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, X, Eye, EyeOff, LogOut, Lock } from 'lucide-react';
 import { useI18n } from '../i18n/context';
+import { useLoginMutation, useLogoutMutation } from '../hooks/api';
 
 interface SecretKeyModalProps {
   isOpen: boolean;
   onClose: () => void;
   isAuthenticated: boolean;
-  onLoginSuccess: (appData?: { id: string; key: string }) => void;
-  onLogoutSuccess: () => void;
+  onLoginSuccess?: (appData?: { id: string; key: string }) => void;
+  onLogoutSuccess?: () => void;
 }
 
 export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
@@ -20,62 +21,47 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
   const { t } = useI18n();
   const [secretInput, setSecretInput] = useState('');
   const [showSecret, setShowSecret] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const loginMutation = useLoginMutation();
+  const logoutMutation = useLogoutMutation();
+
   if (!isOpen) return null;
+
+  const loading = loginMutation.isPending || logoutMutation.isPending;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!secretInput.trim()) return;
 
-    setLoading(true);
     setError(null);
     setSuccess(false);
 
     try {
-      const res = await fetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ secret: secretInput.trim() }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.authenticated) {
+      const data = await loginMutation.mutateAsync(secretInput.trim());
+      if (data.authenticated) {
         setSuccess(true);
         setTimeout(() => {
-          onLoginSuccess(data.app);
+          onLoginSuccess?.(data.app);
           setSecretInput('');
           onClose();
         }, 500);
-      } else {
-        setError(data.error || t.modal.invalidSecret);
       }
     } catch (err: any) {
       setError(err.message || t.modal.invalidSecret);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleLogout = async () => {
-    setLoading(true);
+    setError(null);
     try {
-      await fetch('/api/v1/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      onLogoutSuccess();
+      await logoutMutation.mutateAsync(undefined as any);
+      onLogoutSuccess?.();
       setSecretInput('');
       onClose();
     } catch (err: any) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -166,7 +152,7 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
                 type="button"
                 onClick={handleLogout}
                 disabled={loading}
-                className="flex items-center space-x-1.5 px-3 py-2 text-xs font-medium text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                className="flex items-center space-x-1.5 px-3 py-2 text-xs font-medium text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors disabled:opacity-50"
               >
                 <LogOut className="w-4 h-4" />
                 <span>{t.modal.disconnect}</span>

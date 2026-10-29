@@ -7,15 +7,19 @@ interface ChannelExplorerProps {
   channels: Record<string, { user_count: number }>;
   onRefresh: () => void;
   onSelectChannelForTrigger: (channelName: string) => void;
+  isRefreshing?: boolean;
 }
 
 export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
   channels,
   onRefresh,
   onSelectChannelForTrigger,
+  isRefreshing: externalRefreshing,
 }) => {
   const { t } = useI18n();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [internalRefreshing, setInternalRefreshing] = useState(false);
+
+  const isRefreshing = externalRefreshing ?? internalRefreshing;
 
   const channelList: ChannelStat[] = Object.entries(channels).map(([name, data]) => ({
     name,
@@ -25,9 +29,9 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
   }));
 
   const handleRefreshClick = () => {
-    setIsRefreshing(true);
+    setInternalRefreshing(true);
     onRefresh();
-    setTimeout(() => setIsRefreshing(false), 500);
+    setTimeout(() => setInternalRefreshing(false), 500);
   };
 
   return (
@@ -43,7 +47,8 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
         </div>
         <button
           onClick={handleRefreshClick}
-          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary hover:bg-zinc-800 text-foreground border border-border transition-colors"
+          disabled={isRefreshing}
+          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary hover:bg-zinc-800 text-foreground border border-border transition-colors disabled:opacity-70"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
           <span>{t.channels.refresh}</span>

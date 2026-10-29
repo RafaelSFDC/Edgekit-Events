@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Send, Sparkles, CheckCircle2, AlertTriangle, Key, Code } from 'lucide-react';
 import { useI18n } from '../i18n/context';
+import { useTriggerEvent } from '../hooks/api';
 
 interface EventSimulatorProps {
   isAuthenticated: boolean;
@@ -56,10 +57,12 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
   const [payloadText, setPayloadText] = useState(
     JSON.stringify(PRESETS.order.payload, null, 2)
   );
-  const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
+
+  const triggerMutation = useTriggerEvent();
+  const loading = triggerMutation.isPending;
 
   const handleSelectPreset = (key: keyof typeof PRESETS) => {
     const preset = PRESETS[key];
@@ -96,44 +99,25 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
       return;
     }
 
-    setLoading(true);
     setStatus(null);
 
     try {
-      // Dispara via sessão autenticada com Cookie HttpOnly automático
-      const res = await fetch('/api/v1/trigger', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          channel: channel.trim(),
-          event: event.trim(),
-          data: parsedPayload,
-        }),
+      const data = await triggerMutation.mutateAsync({
+        channel: channel.trim(),
+        event: event.trim(),
+        data: parsedPayload,
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setStatus({
-          type: 'success',
-          message: `${t.simulator.triggerSuccess} (Entregue a ${data.delivered_to || 0} conexões)`,
-        });
-        if (onEventDispatched) onEventDispatched();
-      } else {
-        setStatus({
-          type: 'error',
-          message: data.error || t.simulator.triggerError,
-        });
-      }
+      setStatus({
+        type: 'success',
+        message: `${t.simulator.triggerSuccess} (Entregue a ${data.delivered_to || 0} conexões)`,
+      });
+      onEventDispatched?.();
     } catch (err: any) {
       setStatus({
         type: 'error',
         message: err.message || t.simulator.triggerError,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
