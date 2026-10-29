@@ -31,6 +31,12 @@ pusherWsRoute.get("/app/:app_key", async (c) => {
   headers.set("x-app-key", app.key);
   headers.set("x-app-secret", app.secret);
 
+  const clientIp =
+    c.req.header("cf-connecting-ip") ||
+    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "127.0.0.1";
+  headers.set("x-client-ip", clientIp);
+
   const doRequest = new Request(url.toString(), {
     method: "GET",
     headers,

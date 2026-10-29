@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Home,
   Terminal,
-  Hash,
   Code2,
   Search,
 } from 'lucide-react';
@@ -57,12 +56,6 @@ export const AppSidebar: React.FC = () => {
       label: t.sidebar.console,
       icon: <Terminal className="size-4 shrink-0" />,
       badge: events.length > 0 ? events.length : undefined,
-    },
-    {
-      to: '/channels',
-      label: t.sidebar.channels,
-      icon: <Hash className="size-4 shrink-0" />,
-      badge: channelsCount > 0 ? channelsCount : undefined,
     },
     {
       to: '/snippets',

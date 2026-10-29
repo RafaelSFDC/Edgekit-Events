@@ -19,11 +19,35 @@ export interface DebugEvent {
   timestamp: number;
 }
 
+export type ChannelCategory = 'crud' | 'notifications' | 'jobs' | 'presence' | 'custom';
+export type ChannelVisibility = 'public' | 'private';
+
 export interface ChannelStat {
   name: string;
   user_count: number;
   isPresence: boolean;
   isPrivate: boolean;
+  category?: ChannelCategory;
+  visibility?: ChannelVisibility;
+  description?: string;
+  allowedIps?: string[];
+  events?: string[];
+  autoDestructMinutes?: number;
+  webhookUrl?: string;
+  vacatedAt?: number;
+  createdAt?: number;
+  isRegistered?: boolean;
+}
+
+export interface CreateChannelPayload {
+  name: string;
+  category?: ChannelCategory;
+  visibility?: ChannelVisibility;
+  description?: string;
+  allowedIps?: string[];
+  events?: string[];
+  autoDestructMinutes?: number;
+  webhookUrl?: string;
 }
 
 export interface AppStats {

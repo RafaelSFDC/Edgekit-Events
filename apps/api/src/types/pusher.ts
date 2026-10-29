@@ -16,6 +16,7 @@ export interface PusherUnsubscribePayload {
 
 export interface SocketAttachment {
   socketId: string;
+  clientIp?: string;
   channels: Record<
     string,
     {
@@ -25,6 +26,33 @@ export interface SocketAttachment {
       };
     }
   >;
+}
+
+export type ChannelCategory = 'crud' | 'notifications' | 'jobs' | 'presence' | 'custom';
+export type ChannelVisibility = 'public' | 'private';
+
+export interface ChannelRecord {
+  name: string;
+  category: ChannelCategory;
+  visibility: ChannelVisibility;
+  description?: string;
+  allowedIps?: string[];
+  events: string[];
+  autoDestructMinutes?: number;
+  webhookUrl?: string;
+  vacatedAt?: number;
+  createdAt: number;
+}
+
+export interface CreateChannelPayload {
+  name: string;
+  category?: ChannelCategory;
+  visibility?: ChannelVisibility;
+  description?: string;
+  allowedIps?: string[];
+  events?: string[];
+  autoDestructMinutes?: number;
+  webhookUrl?: string;
 }
 
 export interface TriggerEventPayload {

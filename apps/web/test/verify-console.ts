@@ -4,6 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { ConsoleDataTable } from '../src/components/console/ConsoleDataTable';
 import { EventPayloadDialog } from '../src/components/console/EventPayloadDialog';
 import { EventSimulatorDialog } from '../src/components/console/EventSimulatorDialog';
+import { CreateChannelDialog } from '../src/components/console/CreateChannelDialog';
+import { ChannelExplorer } from '../src/components/ChannelExplorer';
 import { I18nProvider } from '../src/i18n/context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { DebugEvent } from '../src/types';
@@ -92,7 +94,68 @@ async function testConsoleComponents() {
   assert.strictEqual(typeof simDialogHtml, 'string', 'EventSimulatorDialog deve instanciar sem erros');
   console.log('✅ EventSimulatorDialog instanciado com sucesso!');
 
+  // 5. Validar instanciação segura do CreateChannelDialog
+  console.log('5. Validando instanciação do CreateChannelDialog...');
+  const createChannelDialogHtml = renderToStaticMarkup(
+    React.createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      React.createElement(
+        I18nProvider,
+        null,
+        React.createElement(CreateChannelDialog, {
+          open: false,
+          onOpenChange: () => {},
+        })
+      )
+    )
+  );
+  assert.strictEqual(typeof createChannelDialogHtml, 'string', 'CreateChannelDialog deve instanciar sem erros');
+  console.log('✅ CreateChannelDialog instanciado com sucesso!');
+
+  // 6. Validar ChannelExplorer com suporte a criação de canais, arquétipos e segurança
+  console.log('6. Validando ChannelExplorer integrado com criação de canais e arquétipos...');
+  const explorerHtml = renderToStaticMarkup(
+    React.createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      React.createElement(
+        I18nProvider,
+        null,
+        React.createElement(ChannelExplorer, {
+          channels: {
+            pedidos: {
+              user_count: 3,
+              category: 'crud',
+              visibility: 'public',
+              events: ['created', 'updated', 'deleted'],
+              isRegistered: true,
+            },
+            'private-chat': {
+              user_count: 1,
+              category: 'custom',
+              visibility: 'private',
+              allowedIps: ['127.0.0.1'],
+              autoDestructMinutes: 15,
+              isRegistered: true,
+            },
+          },
+          onSelectChannelForTrigger: () => {},
+          onCreateChannel: () => {},
+        })
+      )
+    )
+  );
+  assert(explorerHtml.includes('pedidos'), 'ChannelExplorer deve renderizar o canal pedidos');
+  assert(explorerHtml.includes('private-chat'), 'ChannelExplorer deve renderizar o canal private-chat');
+  assert(explorerHtml.includes('CRUD / Dados'), 'ChannelExplorer deve renderizar o arquétipo CRUD / Dados');
+  assert(explorerHtml.includes('Privado'), 'ChannelExplorer deve renderizar o badge Privado');
+  assert(explorerHtml.includes('15m ocioso'), 'ChannelExplorer deve renderizar o TTL de inatividade');
+  assert(explorerHtml.includes('Novo Canal'), 'ChannelExplorer deve renderizar o botão Novo Canal');
+  console.log('✅ ChannelExplorer com arquétipos e segurança validado com sucesso!');
+
   console.log('\n🎉 TODOS OS TESTES DOS COMPONENTES DO CONSOLE PASSARAM COM SUCESSO!\n');
+  process.exit(0);
 }
 
 testConsoleComponents().catch((err) => {

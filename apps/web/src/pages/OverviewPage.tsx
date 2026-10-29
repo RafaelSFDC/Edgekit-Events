@@ -101,7 +101,7 @@ export const OverviewPage: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
-            <Link to="/channels" className="block w-full">
+            <Link to="/console" search={{ tab: 'channels' } as any} className="block w-full">
               <Button variant="outline" size="sm" className="w-full justify-between text-xs cursor-pointer">
                 <span>Explorar</span>
                 <ArrowRight className="size-3" />

@@ -3,6 +3,8 @@ import { Send, Sparkles, CheckCircle2, Code, AlertTriangle, Radio } from 'lucide
 import { toast } from 'sonner';
 import { useI18n } from '../../i18n/context';
 import { useTriggerEvent } from '../../hooks/api/use-trigger';
+import { useChannelsQuery } from '../../hooks/api/use-channels';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +23,7 @@ interface EventSimulatorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialChannel?: string;
+  initialEvent?: string;
 }
 
 const PRESETS = {
@@ -62,13 +65,18 @@ export const EventSimulatorDialog: React.FC<EventSimulatorDialogProps> = ({
   open,
   onOpenChange,
   initialChannel = 'pedidos',
+  initialEvent,
 }) => {
   const { t } = useI18n();
   const [channel, setChannel] = useState(initialChannel);
-  const [event, setEvent] = useState('novo-pedido');
+  const [event, setEvent] = useState(initialEvent || 'novo-pedido');
   const [payloadText, setPayloadText] = useState(
     JSON.stringify(PRESETS.order.payload, null, 2)
   );
+
+  const { data: channelsData } = useChannelsQuery();
+  const channelConfig = channelsData?.[channel];
+  const configuredEvents: string[] = channelConfig?.events || [];
 
   const triggerMutation = useTriggerEvent();
   const loading = triggerMutation.isPending;
@@ -77,7 +85,10 @@ export const EventSimulatorDialog: React.FC<EventSimulatorDialogProps> = ({
     if (initialChannel) {
       setChannel(initialChannel);
     }
-  }, [initialChannel]);
+    if (initialEvent) {
+      setEvent(initialEvent);
+    }
+  }, [initialChannel, initialEvent]);
 
   const handleSelectPreset = (key: keyof typeof PRESETS) => {
     const preset = PRESETS[key];
@@ -210,6 +221,26 @@ export const EventSimulatorDialog: React.FC<EventSimulatorDialogProps> = ({
                 className="font-mono text-xs h-8"
                 required
               />
+              {configuredEvents.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1 mt-1">
+                  <span className="text-[10px] text-muted-foreground mr-1">Eventos do canal:</span>
+                  {configuredEvents.map((ev) => (
+                    <button
+                      key={ev}
+                      type="button"
+                      onClick={() => setEvent(ev)}
+                      className={cn(
+                        'px-1.5 py-0.5 rounded text-[10px] font-mono border transition-colors cursor-pointer',
+                        event === ev
+                          ? 'bg-primary text-primary-foreground border-primary font-semibold'
+                          : 'bg-muted/60 text-foreground border-border hover:bg-muted'
+                      )}
+                    >
+                      {ev}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

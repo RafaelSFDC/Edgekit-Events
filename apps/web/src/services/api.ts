@@ -129,3 +129,62 @@ export async function triggerEvent(payload: TriggerPayload): Promise<TriggerResp
 
   return data;
 }
+
+/**
+ * 6. Registra / Cria um novo canal no Durable Object SQLite com regras e TTL
+ */
+export async function createChannelApi(
+  payload: import('../types').CreateChannelPayload
+): Promise<{ success: boolean; channel: any }> {
+  const res = await fetch(`${API_BASE}/api/v1/channels`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new ApiError(data.error || 'Falha ao registrar canal.', res.status);
+  }
+
+  return data;
+}
+
+/**
+ * 7. Exclui um canal registrado do Durable Object SQLite
+ */
+export async function deleteChannelApi(channelName: string): Promise<boolean> {
+  const res = await fetch(
+    `${API_BASE}/api/v1/channels/${encodeURIComponent(channelName)}`,
+    {
+      method: 'DELETE',
+      credentials: 'include',
+    }
+  );
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new ApiError(data.error || 'Falha ao excluir canal.', res.status);
+  }
+
+  return true;
+}
+
+/**
+ * 8. Busca a lista completa de canais (registrados + ativos) do Durable Object
+ */
+export async function fetchChannelsApi(): Promise<Record<string, any>> {
+  const res = await fetch(`${API_BASE}/api/v1/channels`, {
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    throw new ApiError('Falha ao buscar lista de canais.', res.status);
+  }
+
+  const data = await res.json();
+  return data.channels || {};
+}

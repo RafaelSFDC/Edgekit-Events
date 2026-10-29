@@ -5,9 +5,28 @@ import type {
   PusherSubscribePayload,
   PusherUnsubscribePayload,
   SocketAttachment,
+  ChannelRecord,
+  ChannelCategory,
+  ChannelVisibility,
+  CreateChannelPayload,
 } from "../types/pusher";
 import { generateSocketId } from "../services/crypto";
 import { verifyChannelAuth } from "../services/auth";
+
+function isIpAllowed(clientIp: string, allowedIps: string[]): boolean {
+  if (!allowedIps || allowedIps.length === 0) return true;
+  const client = clientIp.trim();
+  return allowedIps.some((rule) => {
+    const r = rule.trim();
+    if (!r) return false;
+    if (r === "*" || r === client) return true;
+    if (r.endsWith(".*")) {
+      const prefix = r.slice(0, -2);
+      return client.startsWith(prefix);
+    }
+    return false;
+  });
+}
 
 export class AppSessionDO extends DurableObject<Env> {
   private appConfig: AppConfig | null = null;
@@ -24,6 +43,133 @@ export class AppSessionDO extends DurableObject<Env> {
         );
       }
     } catch {}
+  }
+
+  /**
+   * Helper methods for Channel Storage and DO Alarms Lifecycle
+   */
+  async getChannelConfig(name: string): Promise<ChannelRecord | null> {
+    return (await this.ctx.storage.get<ChannelRecord>(`chan:${name}`)) || null;
+  }
+
+  async saveChannelConfig(record: ChannelRecord): Promise<void> {
+    await this.ctx.storage.put(`chan:${record.name}`, record);
+  }
+
+  async deleteChannelConfig(name: string): Promise<boolean> {
+    return await this.ctx.storage.delete(`chan:${name}`);
+  }
+
+  async listChannelConfigs(): Promise<ChannelRecord[]> {
+    const map = await this.ctx.storage.list<ChannelRecord>({ prefix: "chan:" });
+    return Array.from(map.values());
+  }
+
+  private async sendWebhookNotification(
+    webhookUrl: string | undefined,
+    event: "channel_occupied" | "channel_vacated" | "channel_destroyed",
+    data: Record<string, any>
+  ): Promise<void> {
+    if (!webhookUrl) return;
+    try {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "Edgekit-Realtime-DO/1.0",
+        },
+        body: JSON.stringify({
+          event,
+          timestamp: Date.now(),
+          ...data,
+        }),
+      });
+    } catch (err) {
+      console.error(`[Webhook] Falha ao enviar ${event} para ${webhookUrl}:`, err);
+    }
+  }
+
+  private async handleChannelVacated(channel: string): Promise<void> {
+    const config = await this.getChannelConfig(channel);
+    if (!config) return;
+
+    config.vacatedAt = Date.now();
+    await this.saveChannelConfig(config);
+
+    if (config.autoDestructMinutes && config.autoDestructMinutes > 0) {
+      const ttlMs = config.autoDestructMinutes * 60 * 1000;
+      await this.ctx.storage.setAlarm(Date.now() + ttlMs);
+    }
+
+    if (config.webhookUrl) {
+      this.sendWebhookNotification(config.webhookUrl, "channel_vacated", {
+        channel,
+      });
+    }
+  }
+
+  private async handleChannelOccupied(channel: string): Promise<void> {
+    const config = await this.getChannelConfig(channel);
+    if (!config) return;
+
+    if (config.vacatedAt) {
+      config.vacatedAt = undefined;
+      await this.saveChannelConfig(config);
+    }
+
+    if (config.webhookUrl) {
+      this.sendWebhookNotification(config.webhookUrl, "channel_occupied", {
+        channel,
+      });
+    }
+  }
+
+  /**
+   * Cloudflare DO Alarms Handler for Channel Idle TTL and Auto-Destruction
+   */
+  async alarm(): Promise<void> {
+    this.ensureChannelMapHydrated();
+    const channels = await this.listChannelConfigs();
+    const now = Date.now();
+    let nextAlarmTime: number | null = null;
+
+    for (const ch of channels) {
+      if (ch.autoDestructMinutes && ch.autoDestructMinutes > 0 && ch.vacatedAt) {
+        const subscribers = this.channelMap.get(ch.name);
+        const userCount = subscribers ? subscribers.size : 0;
+
+        if (userCount === 0) {
+          const ttlMs = ch.autoDestructMinutes * 60 * 1000;
+          const expiresAt = ch.vacatedAt + ttlMs;
+
+          if (now >= expiresAt) {
+            await this.deleteChannelConfig(ch.name);
+
+            this.notifyDebugListeners({
+              type: "channel_destroyed",
+              channel: ch.name,
+              reason: "idle_timeout",
+              timestamp: now,
+            });
+
+            if (ch.webhookUrl) {
+              await this.sendWebhookNotification(ch.webhookUrl, "channel_destroyed", {
+                channel: ch.name,
+                reason: "idle_timeout",
+              });
+            }
+          } else {
+            if (nextAlarmTime === null || expiresAt < nextAlarmTime) {
+              nextAlarmTime = expiresAt;
+            }
+          }
+        }
+      }
+    }
+
+    if (nextAlarmTime !== null) {
+      await this.ctx.storage.setAlarm(nextAlarmTime);
+    }
   }
 
   /**
@@ -98,8 +244,10 @@ export class AppSessionDO extends DurableObject<Env> {
       const [client, server] = Object.values(pair);
 
       const socketId = generateSocketId();
+      const clientIp = request.headers.get("x-client-ip") || "127.0.0.1";
       const attachment: SocketAttachment = {
         socketId,
+        clientIp,
         channels: {},
       };
 
@@ -175,17 +323,49 @@ export class AppSessionDO extends DurableObject<Env> {
       return Response.json({ success: true, delivered_to: recipientsCount });
     }
 
-    // Route 3: Channel stats query
+    // Route 3: Channel query (registered in SQLite + in-memory live sockets)
     if (url.pathname === "/channels" && request.method === "GET") {
       this.ensureChannelMapHydrated();
 
       const prefix = url.searchParams.get("filter_by_prefix") || "";
-      const channelsData: Record<string, { user_count: number }> = {};
+      const registeredList = await this.listChannelConfigs();
+      const channelsData: Record<string, any> = {};
 
+      // 1. Incluir canais registrados no SQLite
+      for (const reg of registeredList) {
+        if (!prefix || reg.name.startsWith(prefix)) {
+          const subscribers = this.channelMap.get(reg.name);
+          channelsData[reg.name] = {
+            user_count: subscribers ? subscribers.size : 0,
+            category: reg.category,
+            visibility: reg.visibility,
+            description: reg.description,
+            allowedIps: reg.allowedIps,
+            events: reg.events,
+            autoDestructMinutes: reg.autoDestructMinutes,
+            webhookUrl: reg.webhookUrl,
+            vacatedAt: reg.vacatedAt,
+            createdAt: reg.createdAt,
+            isRegistered: true,
+          };
+        }
+      }
+
+      // 2. Mesclar canais voláteis na memória
       for (const [ch, subscribers] of this.channelMap.entries()) {
         if (!prefix || ch.startsWith(prefix)) {
-          if (subscribers.size > 0) {
-            channelsData[ch] = { user_count: subscribers.size };
+          if (!channelsData[ch] && subscribers.size > 0) {
+            channelsData[ch] = {
+              user_count: subscribers.size,
+              category: ch.startsWith("presence-")
+                ? "presence"
+                : "custom",
+              visibility: (ch.startsWith("private-") || ch.startsWith("presence-"))
+                ? "private"
+                : "public",
+              events: [],
+              isRegistered: false,
+            };
           }
         }
       }
@@ -193,13 +373,98 @@ export class AppSessionDO extends DurableObject<Env> {
       return Response.json({ channels: channelsData });
     }
 
-    // Route 3B: Aggregated stats for Dashboard
+    // Route 3B: Register / Create Channel in SQLite
+    if (url.pathname === "/channels" && request.method === "POST") {
+      let body: CreateChannelPayload;
+      try {
+        body = (await request.json()) as CreateChannelPayload;
+      } catch {
+        return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+      }
+
+      if (!body.name || typeof body.name !== "string") {
+        return Response.json({ error: "Nome do canal é obrigatório" }, { status: 400 });
+      }
+
+      const name = body.name.trim();
+      const category: ChannelCategory =
+        body.category || (name.startsWith("presence-") ? "presence" : "custom");
+      const visibility: ChannelVisibility =
+        body.visibility ||
+        (name.startsWith("private-") || name.startsWith("presence-")
+          ? "private"
+          : "public");
+      const events =
+        Array.isArray(body.events) && body.events.length > 0
+          ? body.events
+          : ["channel:init"];
+
+      const record: ChannelRecord = {
+        name,
+        category,
+        visibility,
+        description: body.description?.trim(),
+        allowedIps: body.allowedIps?.map((ip) => ip.trim()).filter(Boolean),
+        events,
+        autoDestructMinutes:
+          body.autoDestructMinutes !== undefined
+            ? Number(body.autoDestructMinutes)
+            : 0,
+        webhookUrl: body.webhookUrl?.trim(),
+        vacatedAt: Date.now(),
+        createdAt: Date.now(),
+      };
+
+      await this.saveChannelConfig(record);
+
+      if (record.autoDestructMinutes && record.autoDestructMinutes > 0) {
+        const ttlMs = record.autoDestructMinutes * 60 * 1000;
+        await this.ctx.storage.setAlarm(Date.now() + ttlMs);
+      }
+
+      this.notifyDebugListeners({
+        type: "channel_created",
+        channel: record.name,
+        config: record,
+        timestamp: Date.now(),
+      });
+
+      return Response.json({ success: true, channel: record });
+    }
+
+    // Route 3C: Delete registered Channel from SQLite
+    if (
+      url.pathname.startsWith("/channels/") &&
+      !url.pathname.endsWith("/users") &&
+      request.method === "DELETE"
+    ) {
+      const channelName = decodeURIComponent(url.pathname.replace("/channels/", ""));
+      const deleted = await this.deleteChannelConfig(channelName);
+
+      this.notifyDebugListeners({
+        type: "channel_destroyed",
+        channel: channelName,
+        reason: "manual_deletion",
+        timestamp: Date.now(),
+      });
+
+      return Response.json({ success: deleted });
+    }
+
+    // Route 3D: Aggregated stats for Dashboard
     if (url.pathname === "/stats" && request.method === "GET") {
       this.ensureChannelMapHydrated();
 
+      const registeredList = await this.listChannelConfigs();
       const channelsData: Record<string, { user_count: number }> = {};
+
+      for (const reg of registeredList) {
+        const subscribers = this.channelMap.get(reg.name);
+        channelsData[reg.name] = { user_count: subscribers ? subscribers.size : 0 };
+      }
+
       for (const [ch, subscribers] of this.channelMap.entries()) {
-        if (subscribers.size > 0) {
+        if (!channelsData[ch] && subscribers.size > 0) {
           channelsData[ch] = { user_count: subscribers.size };
         }
       }
@@ -326,6 +591,7 @@ export class AppSessionDO extends DurableObject<Env> {
         set.delete(ws);
         if (set.size === 0) {
           this.channelMap.delete(channel);
+          await this.handleChannelVacated(channel);
         }
       }
 
@@ -435,9 +701,30 @@ export class AppSessionDO extends DurableObject<Env> {
         channels: {},
       };
 
-    // Verify auth for private and presence channels
-    const isPrivate = channel.startsWith("private-");
-    const isPresence = channel.startsWith("presence-");
+    // Verify auth and IP restrictions for channels
+    const channelConfig = await this.getChannelConfig(channel);
+    const isPrivate =
+      channel.startsWith("private-") || channelConfig?.visibility === "private";
+    const isPresence =
+      channel.startsWith("presence-") || channelConfig?.category === "presence";
+
+    // Validação de IP para canais privados com allowedIps
+    if (
+      channelConfig?.visibility === "private" &&
+      channelConfig.allowedIps &&
+      channelConfig.allowedIps.length > 0
+    ) {
+      const clientIp = attachment.clientIp || "127.0.0.1";
+      const allowed = isIpAllowed(clientIp, channelConfig.allowedIps);
+      if (!allowed && !auth) {
+        this.sendError(
+          ws,
+          `Subscription authorization rejected: IP ${clientIp} is not authorized for channel ${channel}`,
+          4009
+        );
+        return;
+      }
+    }
 
     if (isPrivate || isPresence) {
       if (!this.appConfig) {
@@ -463,11 +750,16 @@ export class AppSessionDO extends DurableObject<Env> {
 
     // Register subscriber in memory
     let set = this.channelMap.get(channel);
+    const isFirstSubscriber = !set || set.size === 0;
     if (!set) {
       set = new Set();
       this.channelMap.set(channel, set);
     }
     set.add(ws);
+
+    if (isFirstSubscriber) {
+      await this.handleChannelOccupied(channel);
+    }
 
     // Parse presence data if applicable
     let parsedPresence: { user_id: string; user_info?: any } | undefined;
@@ -572,6 +864,7 @@ export class AppSessionDO extends DurableObject<Env> {
       set.delete(ws);
       if (set.size === 0) {
         this.channelMap.delete(channel);
+        this.handleChannelVacated(channel);
       }
     }
 

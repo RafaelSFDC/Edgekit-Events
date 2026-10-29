@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  Play,
-  Pause,
   Trash2,
   Send,
   AlertTriangle,
   RotateCcw,
+  Terminal,
+  Hash,
+  Plus,
 } from 'lucide-react';
 import { useRouterState } from '@tanstack/react-router';
 import { PageLayout } from '../components/layout/PageLayout';
@@ -13,26 +14,38 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertAction } from '@/components/ui/alert';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useI18n } from '../i18n/context';
 import { useEventsQuery, useClearEvents } from '../hooks/api/use-events';
+import { useStatsQuery } from '../hooks/api/use-stats';
 import { useDebugStream } from '../hooks/api/use-debug-stream';
 import { ConsoleDataTable } from '../components/console/ConsoleDataTable';
 import { EventPayloadDialog } from '../components/console/EventPayloadDialog';
 import { EventSimulatorDialog } from '../components/console/EventSimulatorDialog';
+import { CreateChannelDialog } from '../components/console/CreateChannelDialog';
+import { ChannelExplorer } from '../components/ChannelExplorer';
 import type { DebugEvent } from '../types';
 import { toast } from 'sonner';
 
 export const ConsolePage: React.FC = () => {
   const { t } = useI18n();
-  const [isPaused, setIsPaused] = useState(false);
+  const [activeTab, setActiveTab] = useState<'events' | 'channels'>('events');
   const [inspectEvent, setInspectEvent] = useState<DebugEvent | null>(null);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+  const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [simulatorChannel, setSimulatorChannel] = useState<string | undefined>(undefined);
+  const [simulatorDefaultEvent, setSimulatorDefaultEvent] = useState<string | undefined>(undefined);
 
-  // Parâmetros de busca da rota (ex: se redirecionado de ChannelsPage)
+  // Parâmetros de busca da rota (ex: se redirecionado com tab=channels ou channel=xyz)
   const routerState = useRouterState();
   useEffect(() => {
     const search = routerState.location.search as any;
+    if (search?.tab === 'channels') {
+      setActiveTab('channels');
+    } else if (search?.tab === 'events') {
+      setActiveTab('events');
+    }
+
     if (search?.channel) {
       setSimulatorChannel(search.channel);
       setIsSimulatorOpen(true);
@@ -43,12 +56,15 @@ export const ConsolePage: React.FC = () => {
 
   // Hook para dados reativos com TanStack Query como Single Source of Truth
   const { data: events = [] } = useEventsQuery();
+  const { data: stats } = useStatsQuery();
   const clearEvents = useClearEvents();
-  const { wsStatus, reconnect } = useDebugStream(isPaused);
+  const { wsStatus, reconnect } = useDebugStream();
 
   const activeChannelsCount = useMemo(() => {
     return new Set(events.map((e) => e.channel).filter(Boolean)).size;
   }, [events]);
+
+  const totalChannelsCount = stats?.channels_count ?? activeChannelsCount;
 
   const handleClear = () => {
     clearEvents();
@@ -57,37 +73,25 @@ export const ConsolePage: React.FC = () => {
 
   return (
     <PageLayout>
-      {/* 1. Cabeçalho Padronizado Estilo Diorama Care */}
+      {/* 1. Cabeçalho Padronizado */}
       <PageHeader
         title={t.debugConsole.title}
         subtitle={t.debugConsole.subtitle}
         badge={
-          events.length > 0 ? (
-            <Badge variant="outline" className="font-normal text-xs text-muted-foreground">
-              {events.length} {events.length === 1 ? 'evento' : 'eventos'} • {activeChannelsCount}{' '}
-              {activeChannelsCount === 1 ? 'canal detectado' : 'canais detectados'}
-            </Badge>
-          ) : undefined
+          <Badge variant="outline" className="font-normal text-xs text-muted-foreground">
+            {events.length} {events.length === 1 ? 'evento' : 'eventos'} • {totalChannelsCount}{' '}
+            {totalChannelsCount === 1 ? 'canal' : 'canais'}
+          </Badge>
         }
       >
         <Button
           type="button"
           variant="outline"
-          onClick={() => setIsPaused((prev) => !prev)}
+          onClick={() => setIsCreateChannelOpen(true)}
+          className="gap-1.5"
         >
-          {isPaused ? <Play className="size-4 text-emerald-500" /> : <Pause className="size-4" />}
-          <span>{isPaused ? t.debugConsole.resumeStream : t.debugConsole.pauseStream}</span>
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleClear}
-          disabled={events.length === 0}
-          className="text-muted-foreground hover:text-destructive hover:border-destructive/30"
-        >
-          <Trash2 className="size-4" />
-          <span className="hidden sm:inline">{t.debugConsole.clearLogs}</span>
+          <Plus className="size-4" />
+          <span>{t.channels.newChannel}</span>
         </Button>
 
         <Button
@@ -97,42 +101,26 @@ export const ConsolePage: React.FC = () => {
             setSimulatorChannel(undefined);
             setIsSimulatorOpen(true);
           }}
+          className="gap-1.5"
         >
           <Send className="size-4" />
           <span>Simulador</span>
         </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleClear}
+          disabled={events.length === 0}
+          className="text-muted-foreground hover:text-destructive hover:border-destructive/30 gap-1.5"
+        >
+          <Trash2 className="size-4" />
+          <span className="hidden sm:inline">{t.debugConsole.clearLogs}</span>
+        </Button>
       </PageHeader>
 
-      {/* Banner de Aviso Âmbar se Pausado */}
-      {isPaused && (
-        <Alert
-          variant="warning"
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-        >
-          <div className="flex items-start sm:items-center gap-2.5">
-            <AlertTriangle className="size-4 shrink-0 text-amber-500 mt-0.5 sm:mt-0" />
-            <AlertDescription className="text-xs">
-              O stream do console ao vivo está <strong className="font-semibold">pausado</strong> no momento.
-              Novos eventos recebidos pelo WebSocket não serão incluídos na tabela até que o feed seja retomado.
-            </AlertDescription>
-          </div>
-          <AlertAction className="shrink-0 self-end sm:self-auto">
-            <Button
-              type="button"
-              variant="outline"
-              size="xs"
-              onClick={() => setIsPaused(false)}
-              className="h-7 text-xs border-amber-500/40 hover:bg-amber-500/20 text-foreground font-medium gap-1"
-            >
-              <Play className="size-3 text-emerald-600 dark:text-emerald-400" />
-              Retomar Stream
-            </Button>
-          </AlertAction>
-        </Alert>
-      )}
-
       {/* Banner de Aviso se Desconectado */}
-      {wsStatus === 'disconnected' && !isPaused && (
+      {wsStatus === 'disconnected' && (
         <Alert
           variant="destructive"
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
@@ -158,11 +146,51 @@ export const ConsolePage: React.FC = () => {
         </Alert>
       )}
 
-      {/* Tabela de Eventos TanStack diretamente na página (sem Card redundante) */}
-      <ConsoleDataTable
-        data={events}
-        onInspectEvent={(ev) => setInspectEvent(ev)}
-      />
+      {/* 2. Navegação em Abas (Eventos / Canais) */}
+      <Tabs
+        value={activeTab}
+        onValueChange={(val) => setActiveTab(val as 'events' | 'channels')}
+        className="w-full"
+      >
+        <div className="flex items-center justify-between border-b border-border/70 pb-3 mb-4">
+          <TabsList className="bg-muted p-1">
+            <TabsTrigger value="events" className="gap-2 text-xs px-3 py-1.5">
+              <Terminal className="size-3.5" />
+              <span>{t.debugConsole.tabEvents}</span>
+              <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4 ml-0.5">
+                {events.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="channels" className="gap-2 text-xs px-3 py-1.5">
+              <Hash className="size-3.5" />
+              <span>{t.debugConsole.tabChannels}</span>
+              <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4 ml-0.5">
+                {totalChannelsCount}
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* Tab 1: Feed de Eventos */}
+        <TabsContent value="events" className="mt-0">
+          <ConsoleDataTable
+            data={events}
+            onInspectEvent={(ev) => setInspectEvent(ev)}
+          />
+        </TabsContent>
+
+        {/* Tab 2: Explorador de Canais */}
+        <TabsContent value="channels" className="mt-0">
+          <ChannelExplorer
+            onSelectChannelForTrigger={(ch, defaultEvent) => {
+              setSimulatorChannel(ch);
+              setSimulatorDefaultEvent(defaultEvent);
+              setIsSimulatorOpen(true);
+            }}
+            onCreateChannel={() => setIsCreateChannelOpen(true)}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Modal Dialog de Inspeção do Payload JSON */}
       <EventPayloadDialog
@@ -176,6 +204,16 @@ export const ConsolePage: React.FC = () => {
         open={isSimulatorOpen}
         onOpenChange={setIsSimulatorOpen}
         initialChannel={simulatorChannel}
+        initialEvent={simulatorDefaultEvent}
+      />
+
+      {/* Modal Dialog de Criação de Canal */}
+      <CreateChannelDialog
+        open={isCreateChannelOpen}
+        onOpenChange={setIsCreateChannelOpen}
+        onChannelCreated={(ch) => {
+          setActiveTab('channels');
+        }}
       />
     </PageLayout>
   );
