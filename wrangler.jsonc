@@ -4,6 +4,8 @@
   "main": "src/index.ts",
   "compatibility_date": "2025-02-14",
   "compatibility_flags": ["nodejs_compat"],
+
+  // Durable Objects binding (utiliza a API de Hibernação de WebSockets)
   "durable_objects": {
     "bindings": [
       {
@@ -12,17 +14,24 @@
       }
     ]
   },
+
+  // Migrações necessárias para registrar a classe do Durable Object
   "migrations": [
     {
       "tag": "v1",
       "new_classes": ["AppSessionDO"]
     }
   ],
+
+  // 🔑 CREDENCIAIS DO SEU APLICATIVO
+  // Altere os valores abaixo para suas próprias chaves antes de usar em produção.
+  // Você também pode definir DEFAULT_APP_SECRET como secret via `npx wrangler secret put DEFAULT_APP_SECRET`
   "vars": {
     "DEFAULT_APP_ID": "app-default",
     "DEFAULT_APP_KEY": "key-default",
     "DEFAULT_APP_SECRET": "secret-default"
   },
+
   "observability": {
     "enabled": true
   }

@@ -1,50 +1,52 @@
-# 📡 Cloudflare Realtime (Serverless Pusher Clone)
+<div align="center">
 
-> Um clone do Pusher open-source, auto-hospedável e 100% serverless construído sobre **Cloudflare Workers**, **Durable Objects (com WebSocket Hibernation)** e **Hono**.
+# 📡 Cloudflare Realtime
+### Clone Open-Source e Serverless do Pusher na Cloudflare
 
-Ideal para desenvolvedores que mantêm aplicações em **hospedagens compartilhadas (PHP / cPanel / Apache / Nginx)** ou arquiteturas Jamstack/Serverless e precisam entregar atualizações em tempo real (notificações, chat, feeds, dashboards) para os usuários sem pagar planos caros do Pusher/Ably e sem ter que configurar e manter VPS com Docker, Redis ou Socket.io.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%26%20Durable%20Objects-F38020?logo=cloudflare)](https://workers.cloudflare.com/)
+[![Hono](https://img.shields.io/badge/Framework-Hono-E36002?logo=hono)](https://hono.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
----
+<p align="center">
+  <b>Substitua Pusher, Ably e Soketi sem manter servidores dedicados (Node/Redis/Docker).</b><br/>
+  Projetado para desenvolvedores com aplicações em <b>hospedagens compartilhadas (PHP / cPanel)</b> ou arquiteturas serverless que precisam disparar eventos em tempo real para o navegador com <b>custo zero em idle</b>.
+</p>
 
-## ⚡ Por que usar este template?
-
-- **Zero Servidores Dedicados**: Não precisa de VPS, Docker, Redis ou processos em segundo plano (`systemd`/`supervisord`).
-- **Compatível com o SDK do Pusher (v7)**: Seus frontends continuam usando `pusher-js` ou `laravel-echo`, e seu backend pode usar o SDK oficial do Pusher (`pusher-http-php`, `pusher-http-node`, etc.).
-- **API REST Simplificada para PHP Compartilhado**: Dispare eventos com 5 linhas de PHP puro via cURL ou `file_get_contents`, sem necessidade de Composer ou extensões complexas.
-- **WebSocket Hibernation API**: Quando os usuários estão conectados mas sem mensagens trafegando, a Cloudflare descarrega a memória do Durable Object. **Conexões ociosas têm custo zero de CPU!**
-- **Econômico e Escalável**:
-  - Funciona no **Plano Gratuito** da Cloudflare (100.000 requisições/dia).
-  - No plano pago ($5/mês dos Workers), suporta milhões de mensagens a uma fração mínima do custo de planos comerciais como Pusher ($49 a $499/mês).
-
----
-
-## 🏗️ Como Funciona a Arquitetura
-
-```
-  [ Sua Aplicação (PHP Compartilhado / Laravel / Node) ]
-                          │
-            HTTP POST (cURL ou Pusher SDK)
-                          ▼
-             [ Cloudflare Worker (Hono) ]
-                          │
-              RPC interno para Durable Object
-                          ▼
-          [ Durable Object (AppSessionDO) ]
-           • Hibernated WebSockets (Zero CPU Idle)
-           • Tag-based Broadcasting
-           • Canais Públicos, Privados e Presença
-                          │
-          Broadcast via WebSockets em tempo real
-                          ▼
-            [ Navegadores dos Usuários ]
-           (pusher-js / Laravel Echo / WebSockets)
-```
+</div>
 
 ---
 
-## 🚀 Como Fazer o Deploy em 3 Minutos
+## 🎯 Para Quem é Este Projeto?
 
-### 1. Clonar e Instalar Dependências
+Você tem um sistema em **PHP tradicional (cPanel, Hostinger, Locaweb, Apache/Nginx)**, Python, Ruby ou JAMstack, e precisa:
+- Notificar o usuário quando um **novo pedido** for feito.
+- Atualizar um **feed** ou **dashboard** em tempo real sem o usuário dar F5.
+- Criar um **chat**, contador de visualizações ou alertas do sistema.
+
+**O problema:** Hospedagens compartilhadas não conseguem manter servidores WebSocket (como Socket.io ou Swoole) rodando em background. Serviços gerenciados como Pusher ou Ably cobram planos caros que aumentam rapidamente (\$49 a \$499/mês).
+
+**A solução:** Você sobe este repositório gratuitamente na sua conta Cloudflare em 2 minutos. Seu PHP apenas faz uma requisição HTTP simples (`curl` ou `file_get_contents`), e a Cloudflare cuida de toda a entrega WebSocket para os navegadores via **Durable Objects**.
+
+---
+
+## 📊 Comparativo
+
+| Recurso | Pusher Comercial | Soketi (Self-hosted) | **Cloudflare Realtime** |
+| :--- | :---: | :---: | :---: |
+| **Custo de Conexão Ociosa** | Alto (planos pagos) | Custo do VPS + Redis | **R$ 0,00 (Hibernação)** |
+| **Infraestrutura Necessária** | Nenhuma (SaaS) | VPS dedicada, Docker, Redis | **Nenhuma (Serverless na Cloudflare)** |
+| **Escalabilidade Automática** | Sim | Manual (Horizontal / Load Balancer) | **Global na Borda (Edge Cloudflare)** |
+| **Compatível com `pusher-js`** | Sim | Sim | **Sim (Protocolo v7)** |
+| **Compatível com Laravel Echo** | Sim | Sim | **Sim** |
+| **Disparo sem Dependências (PHP)**| Não (requer SDK/HMAC) | Não (requer SDK/HMAC) | **Sim (API REST simplificada)** |
+
+---
+
+## ⚡ Início Rápido (3 Minutos)
+
+### 1. Clonar o Projeto e Instalar Dependências
 
 ```bash
 git clone https://github.com/seu-usuario/cloudflare-realtime.git
@@ -52,9 +54,9 @@ cd cloudflare-realtime
 npm install
 ```
 
-### 2. Configurar as Credenciais da sua Aplicação
+### 2. Configurar as Chaves da sua Aplicação
 
-Abra o arquivo [`wrangler.jsonc`](file:///c:/Users/Win/Documents/GitHub/cloudflare-realtime/wrangler.jsonc) e altere as chaves padrão da sua aplicação:
+Abra o arquivo [`wrangler.jsonc`](wrangler.jsonc) e altere as chaves no bloco `vars`:
 
 ```jsonc
 "vars": {
@@ -64,7 +66,7 @@ Abra o arquivo [`wrangler.jsonc`](file:///c:/Users/Win/Documents/GitHub/cloudfla
 }
 ```
 
-> **Dica de Segurança em Produção:** Você pode manter o `DEFAULT_APP_SECRET` como segredo criptografado na Cloudflare executando:
+> 🔒 **Dica de Produção:** Se preferir manter o segredo oculto do código, execute:
 > ```bash
 > npx wrangler secret put DEFAULT_APP_SECRET
 > ```
@@ -75,24 +77,24 @@ Abra o arquivo [`wrangler.jsonc`](file:///c:/Users/Win/Documents/GitHub/cloudfla
 npm run dev
 ```
 
-O servidor local iniciará em `http://localhost:8787`. Você pode abrir o arquivo de teste interativo [`examples/frontend-client/index.html`](file:///c:/Users/Win/Documents/GitHub/cloudflare-realtime/examples/frontend-client/index.html) no navegador para testar a conexão e o disparo instantaneamente!
+Abra o arquivo [`examples/frontend-client/index.html`](examples/frontend-client/index.html) diretamente no seu navegador para ver a conexão WebSocket e o disparo funcionando na hora!
 
-### 4. Publicar na Cloudflare (Deploy)
-
-Faça login na sua conta Cloudflare e envie:
+### 4. Fazer o Deploy para a Cloudflare
 
 ```bash
 npx wrangler login
 npm run deploy
 ```
 
-Você receberá uma URL no formato: `https://cloudflare-realtime.<seu-subdominio>.workers.dev`.
+Pronto! Você receberá uma URL no formato: `https://cloudflare-realtime.<seu-subdominio>.workers.dev`.
 
 ---
 
-## 💻 Como Conectar no Frontend
+## 💻 1. Como Conectar no Frontend
 
-### Com `pusher-js` oficial (CDN ou NPM)
+Como o servidor implementa o **Pusher Channels Protocol v7**, você usa a biblioteca oficial do Pusher (`pusher-js`) sem precisar de hacks ou SDKs customizados.
+
+### Via CDN (HTML Simples)
 
 ```html
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
@@ -107,24 +109,24 @@ Você receberá uma URL no formato: `https://cloudflare-realtime.<seu-subdominio
     enabledTransports: ["ws", "wss"]
   });
 
-  // Assinar um canal
+  // Assina o canal
   const channel = pusher.subscribe("pedidos");
 
-  // Escutar um evento
-  channel.bind("novo-pedido", function(data) {
-    console.log("Novo pedido recebido!", data);
-    alert(`Novo pedido de R$ ${data.valor_total}!`);
+  // Escuta o evento
+  channel.bind("novo-pedido", function(dados) {
+    console.log("Recebido em tempo real:", dados);
+    alert("Novo pedido #" + dados.pedido_id + " recebido!");
   });
 </script>
 ```
 
 ---
 
-## 🐘 Como Disparar Eventos no Backend (PHP)
+## 🐘 2. Como Disparar Eventos no Backend (PHP)
 
-### Opção 1: PHP Puro com cURL (Hospedagem Compartilhada / cPanel)
+### A. PHP Puro (Ideal para Hospedagem Compartilhada / cPanel)
 
-Ideal para quem **não usa Composer** ou está em hospedagem simples:
+Não precisa de Composer! Dispare eventos com cURL nativo:
 
 ```php
 <?php
@@ -135,9 +137,9 @@ $payload = [
     'channel' => 'pedidos',
     'event'   => 'novo-pedido',
     'data'    => [
-        'pedido_id'   => 1234,
-        'valor_total' => 199.90,
-        'cliente'     => 'João Silva'
+        'pedido_id'   => 1054,
+        'valor_total' => 249.90,
+        'cliente'     => 'Maria Silva'
     ]
 ];
 
@@ -153,16 +155,12 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, [
 $response = curl_exec($ch);
 curl_close($ch);
 
-echo $response;
+echo $response; // {"success": true, "delivered_to": 1}
 ```
 
-### Opção 2: PHP com o SDK Oficial do Pusher (`pusher/pusher-php-server`)
+> 💡 Se sua hospedagem tiver cURL desativado, temos o exemplo com `file_get_contents` em [`examples/php-shared-hosting/simple-fopen-trigger.php`](examples/php-shared-hosting/simple-fopen-trigger.php).
 
-Se o seu projeto já usa a biblioteca oficial do Pusher:
-
-```bash
-composer require pusher/pusher-php-server
-```
+### B. Usando o SDK Oficial do Pusher (`pusher/pusher-php-server`)
 
 ```php
 <?php
@@ -181,57 +179,81 @@ $pusher = new Pusher\Pusher(
     ]
 );
 
-$pusher->trigger('pedidos', 'novo-pedido', [
-    'pedido_id' => 1234,
-    'status'    => 'pago'
-]);
+$pusher->trigger('pedidos', 'novo-pedido', ['pedido_id' => 1054]);
 ```
 
-### Opção 3: Laravel + Laravel Echo
+### C. Laravel + Laravel Echo
 
-Consulte o arquivo de exemplo completo em [`examples/laravel/broadcasting.php`](file:///c:/Users/Win/Documents/GitHub/cloudflare-realtime/examples/laravel/broadcasting.php).
-
----
-
-## 🔒 Tipos de Canais Suportados
-
-| Tipo | Prefixo | Descrição |
-| :--- | :--- | :--- |
-| **Público** | Ex: `noticias`, `pedidos` | Aberto para qualquer cliente assinar sem validação. |
-| **Privado** | `private-*` (ex: `private-usuario.10`) | Exige assinatura HMAC SHA-256 gerada pelo seu backend para autorizar. |
-| **Presença** | `presence-*` (ex: `presence-sala.42`) | Rastreia quem está online na sala, emitindo `pusher_internal:member_added` e `pusher_internal:member_removed` automaticamente. |
+Consulte o arquivo de configuração pronto para copiar e colar em [`examples/laravel/broadcasting.php`](examples/laravel/broadcasting.php).
 
 ---
 
-## 🏢 Suporte a Múltiplas Aplicações (Multi-Tenant)
+## 🔒 Tipos de Canais
 
-Se você quiser usar o mesmo Worker para múltiplos clientes ou projetos diferentes, basta configurar a variável `APPS_CONFIG` com um array JSON no `wrangler.jsonc` ou Cloudflare Dashboard:
+1. **Canais Públicos** (`geral`, `pedidos`):
+   Qualquer cliente pode assinar sem autenticação prévia.
+2. **Canais Privados** (`private-usuario.12`):
+   Exige que o cliente envie a assinatura HMAC SHA-256 gerada pelo seu backend para autorizar a inscrição.
+3. **Canais de Presença** (`presence-sala.99`):
+   Além da validação HMAC, informa quem está online e emite os eventos automáticos `pusher_internal:member_added` e `pusher_internal:member_removed` quando os usuários entram ou saem da página.
+
+---
+
+## 🏢 Múltiplas Aplicações no Mesmo Worker (Multi-Tenant)
+
+Se você gerencia múltiplos clientes ou projetos, pode usar o mesmo Worker para todos. Basta configurar a variável `APPS_CONFIG` com um array JSON:
 
 ```json
 [
-  { "id": "loja-a", "key": "key-loja-a", "secret": "sec-loja-a" },
-  { "id": "loja-b", "key": "key-loja-b", "secret": "sec-loja-b" }
+  { "id": "loja-1", "key": "key-loja-1", "secret": "sec-loja-1" },
+  { "id": "loja-2", "key": "key-loja-2", "secret": "sec-loja-2" }
 ]
 ```
 
-Cada aplicação terá seu próprio Durable Object isolado na borda.
+Cada aplicação terá seu próprio Durable Object isolado na Cloudflare.
 
 ---
 
-## 🧪 Testes e Qualidade
+## ❓ Perguntas Frequentes (FAQ)
 
-O projeto possui suíte de testes automatizados para validação de algoritmos de assinatura (HMAC SHA-256, MD5 do corpo, autorização de canais e tokens simples):
+<details>
+<summary><b>1. Preciso ter uma conta paga na Cloudflare?</b></summary>
+Não! A Cloudflare disponibiliza Workers e Durable Objects no <b>Plano Gratuito</b> com franquia generosa (100.000 requisições/dia). Como o projeto usa a API de Hibernação de WebSockets, conexões abertas e ociosas não consomem CPU.
+</details>
+
+<details>
+<summary><b>2. Quantos usuários conectados aguenta?</b></summary>
+Graças à API de Hibernação de WebSockets da Cloudflare, uma única instância de Durable Object consegue manter milhares de WebSockets simultâneos em repouso. Para o plano pago ($5/mês), você tem acesso a dezenas de milhões de requisições e durações com custo marginal irrisório.
+</details>
+
+<details>
+<summary><b>3. Posso usar com React, Vue, Angular, Svelte ou Next.js?</b></summary>
+Sim! Basta importar a biblioteca padrão <code>pusher-js</code> no seu projeto frontend e configurar o <code>wsHost</code> apontando para a sua URL da Cloudflare.
+</details>
+
+<details>
+<summary><b>4. Como funciona o CORS?</b></summary>
+O servidor já vem com middleware CORS pré-configurado no Hono, liberando requisições REST de qualquer origem ou permitindo que você restrinja ao seu domínio em <code>src/index.ts</code>.
+</details>
+
+---
+
+## 🧪 Testes Automatizados
+
+O repositório já inclui testes cobrindo todo o algoritmo criptográfico de assinaturas HMAC SHA-256, cálculo de MD5, validação de canais privados/presença e tokens Bearer:
 
 ```bash
 # Executa testes unitários
 npm test
 
-# Executa verificação de tipos TypeScript
+# Executa checagem de tipos TypeScript
 npm run typecheck
 ```
 
 ---
 
-## 📄 Licença
+## 🤝 Contribuição e Licença
 
-Distribuído sob a licença **MIT**. Sinta-se livre para usar em projetos comerciais, pessoais ou contribuir com melhorias!
+Contribuições são muito bem-vindas! Consulte o guia de contribuição em [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+Distribuído sob a licença **MIT**. Você pode usar, modificar e distribuir livremente para projetos pessoais ou comerciais. Veja o arquivo [`LICENSE`](LICENSE) para mais detalhes.
