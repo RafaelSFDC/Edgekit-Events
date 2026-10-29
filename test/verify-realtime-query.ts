@@ -167,6 +167,7 @@ async function testRealtimeTanStackQuery() {
   console.log('✅ Desconexão limpa e reset de estado validados!');
 
   console.log('\n🎉 TODOS OS TESTES DE REALTIME E TANSTACK QUERY PASSARAM COM SUCESSO!\n');
+  process.exit(0);
 }
 
 testRealtimeTanStackQuery().catch((err) => {

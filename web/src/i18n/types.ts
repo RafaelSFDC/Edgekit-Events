@@ -100,6 +100,43 @@ export interface Translations {
     presenceChannel: string;
     triggerInThisChannel: string;
   };
+  sidebar: {
+    quickSearch: string;
+    home: string;
+    recents: string;
+    groupCore: string;
+    groupDev: string;
+    groupSecurity: string;
+    console: string;
+    simulator: string;
+    channels: string;
+    snippets: string;
+    credentials: string;
+    collapse: string;
+    expand: string;
+  };
+  overview: {
+    heroTitle: string;
+    heroSubtitle: string;
+    recentChannels: string;
+    quickActions: string;
+    openConsole: string;
+    testEvent: string;
+    exploreChannels: string;
+    viewDocs: string;
+    dataAnalysis: string;
+    last24Hours: string;
+    systemPosture: string;
+    workerRuntime: string;
+  };
+  breadcrumbs: {
+    home: string;
+    overview: string;
+    console: string;
+    simulator: string;
+    channels: string;
+    snippets: string;
+  };
   snippets: {
     title: string;
     subtitle: string;

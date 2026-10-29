@@ -8,7 +8,8 @@
   // Static Assets para servir a Dashboard Web (SPA)
   "assets": {
     "directory": "./dist-web",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
   },
 
   // Durable Objects binding (utiliza a API de Hibernação de WebSockets)
