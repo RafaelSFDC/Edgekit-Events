@@ -1,0 +1,56 @@
+# ==============================================================================
+# Edgekit Events — GitHub Actions Deployment Workflow (Optional Example)
+# ==============================================================================
+# NOTE: If you connected your GitHub repository directly to Cloudflare via
+# Cloudflare Workers Builds (Git Integration in the Cloudflare Dashboard),
+# DO NOT enable this workflow, otherwise Cloudflare and GitHub Actions will
+# both trigger deployments on every commit (duplicate deployments).
+#
+# To use this workflow instead of Cloudflare Dashboard Git builds:
+# 1. Copy this file to `.github/workflows/deploy.yml`
+# 2. Add `CLOUDFLARE_API_TOKEN` to your GitHub Repo Secrets
+# 3. Push to `main` or trigger manually
+# ==============================================================================
+
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Build & Deploy
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Typecheck & Automated Tests
+        run: |
+          pnpm typecheck
+          pnpm test
+
+      - name: Build Web Dashboard Assets
+        run: pnpm build:web
+
+      - name: Deploy Worker to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: 'apps/api'

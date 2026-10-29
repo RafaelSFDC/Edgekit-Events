@@ -7,9 +7,10 @@ console.log('\n📡 ====================================================');
 console.log('   Edgekit Events — Quick Setup Wizard');
 console.log('====================================================\n');
 
-const envPath = path.resolve(process.cwd(), '.dev.vars');
+const apiEnvPath = path.resolve(process.cwd(), 'apps/api/.dev.vars');
+const rootEnvPath = path.resolve(process.cwd(), '.dev.vars');
 
-if (!fs.existsSync(envPath)) {
+if (!fs.existsSync(apiEnvPath) && !fs.existsSync(rootEnvPath)) {
   const generatedId = 'app_' + crypto.randomBytes(6).toString('hex');
   const generatedKey = 'key_' + crypto.randomBytes(12).toString('hex');
   const generatedSecret = 'sec_' + crypto.randomBytes(24).toString('base64url');
@@ -23,27 +24,37 @@ DEFAULT_APP_SECRET=${generatedSecret}
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 `;
 
-  fs.writeFileSync(envPath, defaultEnv, 'utf-8');
-  console.log('✅ File .dev.vars created successfully!');
+  fs.mkdirSync(path.dirname(apiEnvPath), { recursive: true });
+  fs.writeFileSync(apiEnvPath, defaultEnv, 'utf-8');
+  fs.writeFileSync(rootEnvPath, defaultEnv, 'utf-8');
+
+  console.log('✅ File apps/api/.dev.vars created successfully!');
   console.log(`🔑 Generated App ID:     ${generatedId}`);
   console.log(`🔑 Generated App Key:    ${generatedKey}`);
   console.log(`🔒 Generated App Secret: ${generatedSecret}\n`);
 } else {
-  console.log('ℹ️  File .dev.vars already exists. Preserving existing settings.\n');
+  // If one exists but not the other, sync them
+  if (fs.existsSync(rootEnvPath) && !fs.existsSync(apiEnvPath)) {
+    fs.mkdirSync(path.dirname(apiEnvPath), { recursive: true });
+    fs.copyFileSync(rootEnvPath, apiEnvPath);
+    console.log('✅ Synchronized .dev.vars to apps/api/.dev.vars\n');
+  } else {
+    console.log('ℹ️  File .dev.vars already exists. Preserving existing settings.\n');
+  }
 }
 
 console.log('--- Recommended Next Steps ---');
-console.log('1. Build dashboard assets and start local dev server:');
+console.log('1. Start local dev servers (Cloudflare Worker + Vite with instant HMR):');
 console.log('   pnpm dev\n');
 console.log('2. Access the interactive Web Dashboard:');
-console.log('   http://localhost:8787\n');
+console.log('   http://localhost:5173 (Vite HMR)\n');
 console.log('3. Run automated tests:');
 console.log('   pnpm test\n');
 console.log('4. Deploy to Cloudflare Workers with Durable Objects:');
 console.log('   a) Authenticate with Cloudflare:');
-console.log('      pnpm wrangler login');
+console.log('      pnpm --filter @edgekit/api wrangler login');
 console.log('   b) Store your production secret:');
-console.log('      pnpm wrangler secret put DEFAULT_APP_SECRET');
+console.log('      pnpm --filter @edgekit/api wrangler secret put DEFAULT_APP_SECRET');
 console.log('   c) Deploy with 1 command:');
 console.log('      pnpm deploy\n');
 console.log('🚀 Done! Your serverless realtime WebSocket infrastructure is ready.\n');

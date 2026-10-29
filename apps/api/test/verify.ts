@@ -171,7 +171,7 @@ async function runTests() {
 
   // 8. Teste Snippet Oficial de TypeScript (snippets/events.ts)
   console.log("Testing Official TypeScript Snippet (snippets/events.ts)...");
-  const { createEventsClient } = await import("../snippets/events");
+  const { createEventsClient } = await import("../../../snippets/events");
   const snippetClient = createEventsClient({
     host: "realtime.test.internal",
     appKey: app.key,

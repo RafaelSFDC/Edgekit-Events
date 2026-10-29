@@ -1,8 +1,8 @@
 import assert from 'node:assert';
-import { queryKeys } from '../web/src/hooks/api/query-keys';
-import { defaultListQueryOptions, defaultDetailQueryOptions } from '../web/src/hooks/api/query-defaults';
-import { getQueryClient, cacheUtils } from '../web/src/lib/query-client';
-import { ApiError } from '../web/src/services/api';
+import { queryKeys } from '../src/hooks/api/query-keys';
+import { defaultListQueryOptions, defaultDetailQueryOptions } from '../src/hooks/api/query-defaults';
+import { getQueryClient, cacheUtils } from '../src/lib/query-client';
+import { ApiError } from '../src/services/api';
 
 async function testQueryArchitecture() {
   console.log('🧪 Iniciando testes de validação da infraestrutura TanStack Query...');

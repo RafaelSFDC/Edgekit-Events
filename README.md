@@ -96,12 +96,12 @@ The project includes a modern, edge-rendered management dashboard built with **R
    ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
    ```
 
-4. **Build dashboard and start local dev server:**
+4. **Start local dev servers (Cloudflare Worker + Vite with instant HMR):**
    ```bash
-   pnpm build:web
    pnpm dev
    ```
-   Open `http://localhost:8787` in your browser to access the interactive Web Dashboard!
+   - Open `http://localhost:5173` in your browser for the Web Dashboard with instant Vite Hot Module Replacement (HMR).
+   - Worker API & WebSocket backend run on `http://localhost:8787`.
 
 5. **Run automated unit & crypto tests:**
    ```bash
@@ -114,13 +114,13 @@ The project includes a modern, edge-rendered management dashboard built with **R
 
 ### 1. Authenticate with Cloudflare CLI
 ```bash
-pnpm wrangler login
+pnpm --filter @edgekit/api wrangler login
 ```
 
 ### 2. Configure Your Secret App Key
 Define your production `DEFAULT_APP_SECRET` securely in Cloudflare:
 ```bash
-pnpm wrangler secret put DEFAULT_APP_SECRET
+pnpm --filter @edgekit/api wrangler secret put DEFAULT_APP_SECRET
 ```
 *(Enter your secure secret key when prompted)*
 

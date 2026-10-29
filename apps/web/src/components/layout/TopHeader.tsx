@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Radio,
   Globe,
@@ -14,7 +14,17 @@ import { useTheme } from '../../theme/context';
 import { useAuth } from '../../context/auth-context';
 import { useSidebar, SidebarTrigger } from '@/components/ui/sidebar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { Link, useRouterState } from '@tanstack/react-router';
 import {
@@ -36,7 +46,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ wsStatus, onReconnectWs })
   const { resolvedTheme, toggleTheme } = useTheme();
   const { isAuthenticated, openModal, logout } = useAuth();
   const { state } = useSidebar();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Rota ativa para os breadcrumbs integrados no header
   const routerState = useRouterState();
@@ -161,103 +170,86 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ wsStatus, onReconnectWs })
               }
             />
             {wsStatus === 'disconnected' && (
-              <TooltipContent>{locale === 'pt-BR' ? 'Reconectar WebSocket' : 'Reconnect WebSocket'}</TooltipContent>
+              <TooltipContent>
+                {!isAuthenticated
+                  ? (locale === 'pt-BR' ? 'Conectar para ativar WebSocket' : 'Sign in to enable WebSocket')
+                  : (locale === 'pt-BR' ? 'Reconectar WebSocket' : 'Reconnect WebSocket')}
+              </TooltipContent>
             )}
           </Tooltip>
 
           {/* Avatar e Menu do Usuário */}
-          <div className="relative">
-            <button
-              onClick={() => setIsProfileOpen((prev) => !prev)}
-              className={cn(
-                'flex items-center gap-1.5 rounded-full p-1 transition-colors hover:bg-muted outline-hidden cursor-pointer',
-                isProfileOpen && 'bg-muted'
-              )}
-            >
-              <div className="size-7 rounded-full bg-muted border border-border flex items-center justify-center text-foreground font-semibold text-xs shadow-2xs">
-                <User className="size-3.5 text-muted-foreground" />
-              </div>
-              <ChevronDown className="size-3 text-muted-foreground" />
-            </button>
-
-            {/* Dropdown Menu estilo Cloudflare */}
-            {isProfileOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsProfileOpen(false)}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 rounded-full border border-border"
                 />
-                <div className="absolute right-0 mt-1.5 w-56 rounded-lg border border-border bg-card p-1.5 text-card-foreground shadow-lg z-50 text-xs">
-                  {/* Cabeçalho da conta */}
-                  <div className="px-2.5 py-2 border-b border-border/80">
-                    <p className="font-semibold text-foreground truncate">app-default</p>
-                    <p className="text-[11px] text-muted-foreground truncate font-mono">
-                      key-default
-                    </p>
+              }
+            >
+              <User className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>
+                  <p className="font-semibold text-foreground truncate">app-default</p>
+                  <p className="text-[11px] text-muted-foreground font-mono font-normal truncate">
+                    key-default
+                  </p>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  onClick={() => setLocale(locale === 'pt-BR' ? 'en' : 'pt-BR')}
+                  className="justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <Globe className="size-4" />
+                    <span>{locale === 'pt-BR' ? 'Idioma' : 'Language'}</span>
                   </div>
-
-                  {/* Opções: Idioma e Tema */}
-                  <div className="py-1">
-                    {/* 1. Trocar Idioma */}
-                    <button
-                      onClick={() => setLocale(locale === 'pt-BR' ? 'en' : 'pt-BR')}
-                      className="flex w-full items-center justify-between rounded px-2.5 py-2 text-left hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Globe className="size-3.5" />
-                        <span>{locale === 'pt-BR' ? 'Idioma' : 'Language'}</span>
-                      </div>
-                      <span className="font-semibold text-[10px] uppercase bg-muted px-1.5 py-0.5 rounded border border-border/70 text-foreground">
-                        {locale === 'pt-BR' ? 'PT-BR' : 'EN'}
-                      </span>
-                    </button>
-
-                    {/* 2. Trocar Tema */}
-                    <button
-                      onClick={toggleTheme}
-                      className="flex w-full items-center justify-between rounded px-2.5 py-2 text-left hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        {resolvedTheme === 'dark' ? (
-                          <Moon className="size-3.5 text-primary" />
-                        ) : (
-                          <Sun className="size-3.5 text-amber-500" />
-                        )}
-                        <span>{locale === 'pt-BR' ? 'Aparência' : 'Appearance'}</span>
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">
-                        {resolvedTheme === 'dark'
-                          ? (locale === 'pt-BR' ? 'Escuro' : 'Dark')
-                          : (locale === 'pt-BR' ? 'Claro' : 'Light')}
-                      </span>
-                    </button>
+                  <span className="font-semibold text-[10px] uppercase bg-muted px-1.5 py-0.5 rounded border border-border/70 text-foreground">
+                    {locale === 'pt-BR' ? 'PT-BR' : 'EN'}
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={toggleTheme} className="justify-between">
+                  <div className="flex items-center gap-2">
+                    {resolvedTheme === 'dark' ? (
+                      <Moon className="size-4 text-primary" />
+                    ) : (
+                      <Sun className="size-4 text-amber-500" />
+                    )}
+                    <span>{locale === 'pt-BR' ? 'Aparência' : 'Appearance'}</span>
                   </div>
-
-                  {/* 3. Botão de Sair */}
-                  <div className="border-t border-border/80 pt-1">
-                    <button
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        if (isAuthenticated) {
-                          logout();
-                        } else {
-                          openModal();
-                        }
-                      }}
-                      className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-destructive hover:bg-destructive/10 transition-colors font-medium cursor-pointer"
-                    >
-                      <LogOut className="size-3.5" />
-                      <span>
-                        {isAuthenticated
-                          ? (locale === 'pt-BR' ? 'Finalizar sessão' : 'Sign out')
-                          : (locale === 'pt-BR' ? 'Conectar' : 'Connect')}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+                  <span className="text-[11px] text-muted-foreground">
+                    {resolvedTheme === 'dark'
+                      ? (locale === 'pt-BR' ? 'Escuro' : 'Dark')
+                      : (locale === 'pt-BR' ? 'Claro' : 'Light')}
+                  </span>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant={isAuthenticated ? 'destructive' : 'default'}
+                onClick={() => {
+                  if (isAuthenticated) {
+                    logout();
+                  } else {
+                    openModal();
+                  }
+                }}
+              >
+                <LogOut className="size-4" />
+                <span>
+                  {isAuthenticated
+                    ? (locale === 'pt-BR' ? 'Finalizar sessão' : 'Sign out')
+                    : (locale === 'pt-BR' ? 'Conectar' : 'Connect')}
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

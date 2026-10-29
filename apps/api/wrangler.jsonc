@@ -1,13 +1,13 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
+  "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "cloudflare-realtime",
   "main": "src/index.ts",
   "compatibility_date": "2025-02-14",
   "compatibility_flags": ["nodejs_compat"],
 
-  // Static Assets para servir a Dashboard Web (SPA)
+  // Static Assets para servir a Dashboard Web (SPA) compilada
   "assets": {
-    "directory": "./dist-web",
+    "directory": "../web/dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   },
@@ -32,7 +32,7 @@
 
   // 🔑 CREDENCIAIS DO SEU APLICATIVO
   // Altere os valores abaixo para suas próprias chaves antes de usar em produção.
-  // Você também pode definir DEFAULT_APP_SECRET como secret via `npx wrangler secret put DEFAULT_APP_SECRET`
+  // Você também pode definir DEFAULT_APP_SECRET como secret via `wrangler secret put DEFAULT_APP_SECRET`
   "vars": {
     "DEFAULT_APP_ID": "app-default",
     "DEFAULT_APP_KEY": "key-default",

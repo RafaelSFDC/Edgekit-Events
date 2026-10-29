@@ -5,10 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  root: 'web',
   base: '/',
   build: {
-    outDir: '../dist-web',
+    outDir: 'dist',
     emptyOutDir: true,
   },
   resolve: {

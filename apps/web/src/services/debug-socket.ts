@@ -12,6 +12,8 @@ class DebugSocketManager {
   private pingTimer: any = null;
   private isPaused = false;
   private shouldConnect = false;
+  private retryCount = 0;
+  private readonly maxRetries = 5;
 
   getStatus(): DebugConnectionStatus {
     return this.status;
@@ -64,6 +66,7 @@ class DebugSocketManager {
 
       ws.onopen = () => {
         if (this.ws !== ws) return;
+        this.retryCount = 0;
         this.setStatus('connected');
         this.startPing();
       };
@@ -107,10 +110,17 @@ class DebugSocketManager {
         this.setStatus('disconnected');
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         if (this.ws !== ws) return;
         this.setStatus('disconnected');
         this.stopPing();
+
+        // If closed with policy violation/unauthorized, stop retrying immediately
+        if (event && (event.code === 1008 || event.code === 4401)) {
+          this.shouldConnect = false;
+          return;
+        }
+
         if (this.shouldConnect) {
           this.scheduleReconnect();
         }
@@ -125,6 +135,7 @@ class DebugSocketManager {
 
   disconnect(): void {
     this.shouldConnect = false;
+    this.retryCount = 0;
     this.cleanupSocket();
     this.setStatus('disconnected');
   }
@@ -136,12 +147,22 @@ class DebugSocketManager {
 
   private scheduleReconnect(): void {
     if (this.reconnectTimer) return;
+
+    if (this.retryCount >= this.maxRetries) {
+      this.shouldConnect = false;
+      this.setStatus('disconnected');
+      return;
+    }
+
+    const delay = Math.min(2000 * Math.pow(1.5, this.retryCount), 15000);
+    this.retryCount++;
+
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       if (this.shouldConnect) {
         this.connect();
       }
-    }, 2500);
+    }, delay);
   }
 
   private startPing(): void {

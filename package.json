@@ -2,18 +2,22 @@
   "name": "edgekit-events",
   "version": "1.0.0",
   "type": "module",
+  "private": true,
   "description": "Serverless, open-source Pusher clone running on Cloudflare Workers and Durable Objects — Edgekit Events",
-  "main": "src/index.ts",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "concurrently -n \"api,web\" -c \"magenta,cyan\" \"pnpm --filter @edgekit/api dev\" \"pnpm --filter @edgekit/web dev\"",
+    "dev:api": "pnpm --filter @edgekit/api dev",
+    "dev:web": "pnpm --filter @edgekit/web dev",
     "setup": "node scripts/setup.mjs",
-    "dev:web": "vite --config web/vite.config.ts",
-    "build:web": "vite build --config web/vite.config.ts",
-    "build": "pnpm build:web && tsc --noEmit",
-    "deploy": "pnpm build:web && wrangler deploy",
-    "cf-typegen": "wrangler types",
-    "typecheck": "tsc --noEmit && tsc --project web/tsconfig.json --noEmit",
-    "test": "npx tsx test/verify.ts && npx tsx test/verify-query.ts && npx tsx test/verify-realtime-query.ts"
+    "build:web": "pnpm --filter @edgekit/web build",
+    "build:api": "pnpm --filter @edgekit/api build",
+    "build": "pnpm --filter @edgekit/web build && pnpm --filter @edgekit/api build",
+    "deploy": "pnpm --filter @edgekit/web build && pnpm --filter @edgekit/api deploy",
+    "cf-typegen": "pnpm --filter @edgekit/api cf-typegen",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "test:api": "pnpm --filter @edgekit/api test",
+    "test:web": "pnpm --filter @edgekit/web test"
   },
   "keywords": [
     "pusher",
@@ -28,32 +32,7 @@
   ],
   "author": "",
   "license": "MIT",
-  "dependencies": {
-    "@base-ui/react": "^1.9.0",
-    "@tanstack/react-query": "^5.105.0",
-    "@tanstack/react-router": "^1.170.46",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "hono": "^4.7.2",
-    "lucide-react": "^1.63.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "sonner": "^2.0.8",
-    "tailwind-merge": "^3.0.0",
-    "tw-animate-css": "^1.4.0"
-  },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250224.0",
-    "@tailwindcss/vite": "^4.0.0",
-    "@tanstack/react-query-devtools": "^5.105.0",
-    "@types/node": "^26.6.5",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.0",
-    "tailwindcss": "^4.0.0",
-    "tsx": "^4.23.15",
-    "typescript": "^5.7.3",
-    "vite": "^6.0.0",
-    "wrangler": "^3.114.0"
+    "concurrently": "^9.1.2"
   }
 }

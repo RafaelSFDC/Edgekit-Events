@@ -1,12 +1,14 @@
 import { useEffect, useCallback, useSyncExternalStore } from 'react';
 import { debugSocketManager, type DebugConnectionStatus } from '../../services/debug-socket';
-import { useAuth } from '../../context/auth-context';
+import { useOptionalAuth } from '../../context/auth-context';
 
 export function useDebugStream(isPaused = false): {
   wsStatus: DebugConnectionStatus;
   reconnect: () => void;
 } {
-  const { isAuthenticated } = useAuth();
+  const auth = useOptionalAuth();
+  const isAuthenticated = auth ? auth.isAuthenticated : true;
+  const openModal = auth?.openModal;
 
   const wsStatus = useSyncExternalStore(
     (onStoreChange) => debugSocketManager.subscribe(onStoreChange),
@@ -26,8 +28,12 @@ export function useDebugStream(isPaused = false): {
   }, [isAuthenticated]);
 
   const reconnect = useCallback(() => {
+    if (!isAuthenticated) {
+      openModal?.();
+      return;
+    }
     debugSocketManager.reconnect();
-  }, []);
+  }, [isAuthenticated, openModal]);
 
   return { wsStatus, reconnect };
 }

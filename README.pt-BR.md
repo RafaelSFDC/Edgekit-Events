@@ -96,12 +96,12 @@ O projeto conta com uma interface visual moderna construída em **React 19, Tail
    ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
    ```
 
-4. **Compilar os assets da Dashboard e iniciar o servidor local:**
+4. **Iniciar os servidores locais de desenvolvimento (Cloudflare Worker + Vite com HMR instantâneo):**
    ```bash
-   pnpm build:web
    pnpm dev
    ```
-   Abra `http://localhost:8787` no seu navegador para acessar a Dashboard interativa!
+   - Acesse `http://localhost:5173` no seu navegador para a Dashboard Web com Hot Module Replacement (HMR) instantâneo via Vite.
+   - A API do Worker e o servidor WebSocket rodam em `http://localhost:8787`.
 
 5. **Executar testes automatizados:**
    ```bash
@@ -114,13 +114,13 @@ O projeto conta com uma interface visual moderna construída em **React 19, Tail
 
 ### 1. Autenticar com o CLI da Cloudflare
 ```bash
-pnpm wrangler login
+pnpm --filter @edgekit/api wrangler login
 ```
 
 ### 2. Configurar a Chave Secreta em Produção
 Defina a sua `DEFAULT_APP_SECRET` com segurança na Cloudflare:
 ```bash
-pnpm wrangler secret put DEFAULT_APP_SECRET
+pnpm --filter @edgekit/api wrangler secret put DEFAULT_APP_SECRET
 ```
 *(Digite o segredo seguro quando solicitado)*
 
