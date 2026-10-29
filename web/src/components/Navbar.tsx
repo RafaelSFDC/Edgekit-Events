@@ -1,7 +1,8 @@
 import React from 'react';
-import { Radio, Key, Globe, ExternalLink, RefreshCw, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { Radio, KeyRound, Globe, ExternalLink, RefreshCw, ShieldCheck, Sun, Moon } from 'lucide-react';
 import { useI18n } from '../i18n/context';
 import { useTheme } from '../theme/context';
+import { useAuth } from '../context/auth-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -9,22 +10,16 @@ import { cn } from '@/lib/utils';
 
 interface NavbarProps {
   wsStatus: 'connected' | 'connecting' | 'disconnected';
-  isAuthenticated: boolean;
-  appId?: string;
-  appKey?: string;
-  onOpenSecretModal: () => void;
   onReconnectWs: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   wsStatus,
-  isAuthenticated,
-  appKey,
-  onOpenSecretModal,
   onReconnectWs,
 }) => {
   const { locale, setLocale, t } = useI18n();
   const { resolvedTheme, toggleTheme } = useTheme();
+  const { isAuthenticated, openModal } = useAuth();
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
@@ -81,41 +76,42 @@ export const Navbar: React.FC<NavbarProps> = ({
             {wsStatus === 'disconnected' && <TooltipContent>{t.navbar.reconnect}</TooltipContent>}
           </Tooltip>
 
-          {/* App Key Badge if loaded */}
-          {appKey && (
-            <Badge
-              variant="outline"
-              className="hidden md:flex items-center gap-1 bg-secondary/80 border-border text-xs text-muted-foreground font-normal"
-            >
-              <span className="text-muted-foreground/80">Key:</span>
-              <code className="text-foreground font-mono">{appKey}</code>
-            </Badge>
-          )}
-
-          {/* App Secret / Session Trigger Button */}
-          <Button
-            variant={isAuthenticated ? 'outline' : 'secondary'}
-            size="sm"
-            onClick={onOpenSecretModal}
-            className={
-              isAuthenticated
-                ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
-                : ''
-            }
-          >
-            {isAuthenticated ? (
-              <>
-                <ShieldCheck className="size-3.5 text-primary" />
-                <span className="hidden sm:inline">Sessão Segura Ativa</span>
-                <span className="sm:hidden">Sessão</span>
-              </>
-            ) : (
-              <>
-                <Key className="size-3.5 text-muted-foreground" />
-                <span>{t.navbar.connectSecret}</span>
-              </>
-            )}
-          </Button>
+          {/* Passkey / Session Trigger Button */}
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant={isAuthenticated ? 'outline' : 'secondary'}
+                  size="sm"
+                  onClick={openModal}
+                  className={cn(
+                    'gap-1.5',
+                    isAuthenticated &&
+                      'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+                  )}
+                >
+                  {isAuthenticated ? (
+                    <>
+                      <ShieldCheck className="size-3.5 text-emerald-500" />
+                      <span>{locale === 'pt-BR' ? 'Passkey Conectada' : 'Passkey Connected'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="size-3.5 text-muted-foreground" />
+                      <span>{t.navbar.connectSecret}</span>
+                    </>
+                  )}
+                </Button>
+              }
+            />
+            <TooltipContent>
+              {isAuthenticated
+                ? locale === 'pt-BR'
+                  ? 'Sessão autenticada via Passkey (Cookie HttpOnly)'
+                  : 'Authenticated Passkey session (HttpOnly cookie)'
+                : t.navbar.credentialsTooltip}
+            </TooltipContent>
+          </Tooltip>
 
           {/* Language Switcher */}
           <Tooltip>

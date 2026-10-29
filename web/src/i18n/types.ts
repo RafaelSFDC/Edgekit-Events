@@ -125,5 +125,7 @@ export interface Translations {
     invalidSecret: string;
     savedNote: string;
     disconnect: string;
+    secureSession: string;
+    authenticatedActive: string;
   };
 }

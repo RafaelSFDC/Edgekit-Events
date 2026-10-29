@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Send, Sparkles, CheckCircle2, AlertTriangle, Key, Code } from 'lucide-react';
+import { Send, Sparkles, CheckCircle2, AlertTriangle, KeyRound, Code } from 'lucide-react';
+import { toast } from 'sonner';
 import { useI18n } from '../i18n/context';
+import { useAuth } from '../context/auth-context';
 import { useTriggerEvent } from '../hooks/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -11,10 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 interface EventSimulatorProps {
-  isAuthenticated: boolean;
   initialChannel?: string;
-  onOpenSecretModal: () => void;
-  onEventDispatched?: () => void;
 }
 
 const PRESETS = {
@@ -53,19 +52,14 @@ const PRESETS = {
 };
 
 export const EventSimulator: React.FC<EventSimulatorProps> = ({
-  isAuthenticated,
   initialChannel = 'pedidos',
-  onOpenSecretModal,
-  onEventDispatched,
 }) => {
   const { t } = useI18n();
+  const { isAuthenticated, openModal } = useAuth();
   const [channel, setChannel] = useState(initialChannel);
   const [event, setEvent] = useState('novo-pedido');
   const [payloadText, setPayloadText] = useState(
     JSON.stringify(PRESETS.order.payload, null, 2)
-  );
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(
-    null
   );
 
   const triggerMutation = useTriggerEvent();
@@ -76,25 +70,25 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
     setChannel(preset.channel);
     setEvent(preset.event);
     setPayloadText(JSON.stringify(preset.payload, null, 2));
-    setStatus(null);
+    triggerMutation.reset();
   };
 
   const handleFormatJson = () => {
     try {
       const parsed = JSON.parse(payloadText);
       setPayloadText(JSON.stringify(parsed, null, 2));
-      setStatus(null);
+      triggerMutation.reset();
     } catch {
-      setStatus({ type: 'error', message: t.simulator.invalidJson });
+      toast.error(t.simulator.invalidJson);
     }
   };
 
-  const handleTrigger = async (e: React.FormEvent) => {
+  const handleTrigger = (e: React.FormEvent) => {
     e.preventDefault();
     if (!channel.trim() || !event.trim()) return;
 
     if (!isAuthenticated) {
-      onOpenSecretModal();
+      openModal();
       return;
     }
 
@@ -102,30 +96,15 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
     try {
       parsedPayload = JSON.parse(payloadText);
     } catch {
-      setStatus({ type: 'error', message: t.simulator.invalidJson });
+      toast.error(t.simulator.invalidJson);
       return;
     }
 
-    setStatus(null);
-
-    try {
-      const data = await triggerMutation.mutateAsync({
-        channel: channel.trim(),
-        event: event.trim(),
-        data: parsedPayload,
-      });
-
-      setStatus({
-        type: 'success',
-        message: `${t.simulator.triggerSuccess} (Entregue a ${data.delivered_to || 0} conexões)`,
-      });
-      onEventDispatched?.();
-    } catch (err: any) {
-      setStatus({
-        type: 'error',
-        message: err.message || t.simulator.triggerError,
-      });
-    }
+    triggerMutation.mutate({
+      channel: channel.trim(),
+      event: event.trim(),
+      data: parsedPayload,
+    });
   };
 
   return (
@@ -151,10 +130,10 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
             </div>
             <Button
               size="sm"
-              onClick={onOpenSecretModal}
+              onClick={openModal}
               className="gap-1.5 shrink-0"
             >
-              <Key className="size-3.5" />
+              <KeyRound className="size-3.5" />
               <span>Conectar Agora</span>
             </Button>
           </Alert>
@@ -252,23 +231,26 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
             />
           </div>
 
-          {/* Status message */}
-          {status && (
+          {/* Status message directly driven by TanStack Query mutation */}
+          {triggerMutation.isSuccess && (
             <Alert
-              variant={status.type === 'error' ? 'destructive' : 'default'}
-              className={cn(
-                'p-3 text-xs flex items-center gap-2',
-                status.type === 'success' &&
-                  'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-              )}
+              className="p-3 text-xs flex items-center gap-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
             >
-              {status.type === 'success' ? (
-                <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
-              ) : (
-                <AlertTriangle className="size-4 shrink-0" />
-              )}
+              <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
               <AlertDescription className="font-medium text-inherit">
-                {status.message}
+                {t.simulator.triggerSuccess} (Entregue a {triggerMutation.data?.delivered_to || 0} conexões)
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {triggerMutation.isError && (
+            <Alert
+              variant="destructive"
+              className="p-3 text-xs flex items-center gap-2"
+            >
+              <AlertTriangle className="size-4 shrink-0" />
+              <AlertDescription className="font-medium text-inherit">
+                {triggerMutation.error?.message || t.simulator.triggerError}
               </AlertDescription>
             </Alert>
           )}

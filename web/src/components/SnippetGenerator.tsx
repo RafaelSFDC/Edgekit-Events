@@ -9,25 +9,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
 interface SnippetGeneratorProps {
-  appKey: string;
-  appId: string;
-  host: string;
+  host?: string;
 }
 
 type SnippetTab = 'js' | 'laravel' | 'php' | 'node' | 'python' | 'go' | 'dotnet' | 'curl';
 
 export const SnippetGenerator: React.FC<SnippetGeneratorProps> = ({
-  appKey,
-  appId,
   host,
 }) => {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<SnippetTab>('js');
   const [copied, setCopied] = useState(false);
 
-  const keyDisplay = appKey || 'minha-chave-publica';
-  const idDisplay = appId || 'meu-app-id';
-  const hostDisplay = host || 'realtime.seusite.workers.dev';
+  const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : undefined;
+  const keyDisplay = (env?.VITE_DEFAULT_APP_KEY as string | undefined) || 'SUA_APP_KEY';
+  const idDisplay = (env?.VITE_DEFAULT_APP_ID as string | undefined) || 'SEU_APP_ID';
+  const hostDisplay = host || (env?.VITE_EVENTS_HOST as string | undefined) || (typeof window !== 'undefined' ? window.location.host : 'realtime.seusite.workers.dev');
   const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
   const wsPort = isHttps ? 443 : (typeof window !== 'undefined' && window.location.port ? parseInt(window.location.port) : 443);
   const isTls = isHttps || wsPort === 443;

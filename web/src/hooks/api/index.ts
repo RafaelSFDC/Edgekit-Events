@@ -4,3 +4,5 @@ export * from './mutation-helpers';
 export * from './use-auth';
 export * from './use-stats';
 export * from './use-trigger';
+export * from './use-events';
+export * from './use-debug-stream';

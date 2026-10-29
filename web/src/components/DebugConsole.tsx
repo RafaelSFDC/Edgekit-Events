@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { DebugEvent } from '../types';
 import { useI18n } from '../i18n/context';
+import { useEventsQuery, useClearEvents } from '../hooks/api';
 import { formatTime, copyToClipboard, cn } from '../lib/utils';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -40,19 +41,24 @@ import {
 } from '@/components/ui/dialog';
 
 interface DebugConsoleProps {
-  events: DebugEvent[];
+  events?: DebugEvent[];
   isPaused: boolean;
   onTogglePause: () => void;
-  onClear: () => void;
+  onClear?: () => void;
 }
 
 export const DebugConsole: React.FC<DebugConsoleProps> = ({
-  events,
+  events: propEvents,
   isPaused,
   onTogglePause,
-  onClear,
+  onClear: propOnClear,
 }) => {
   const { t } = useI18n();
+  const { data: queryEvents = [] } = useEventsQuery();
+  const clearQueryEvents = useClearEvents();
+
+  const events = propEvents ?? queryEvents;
+  const onClear = propOnClear ?? clearQueryEvents;
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedEvent, setSelectedEvent] = useState<DebugEvent | null>(null);

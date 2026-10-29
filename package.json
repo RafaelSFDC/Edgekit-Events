@@ -13,7 +13,7 @@
     "deploy": "pnpm build:web && wrangler deploy",
     "cf-typegen": "wrangler types",
     "typecheck": "tsc --noEmit && tsc --project web/tsconfig.json --noEmit",
-    "test": "npx tsx test/verify.ts && npx tsx test/verify-query.ts"
+    "test": "npx tsx test/verify.ts && npx tsx test/verify-query.ts && npx tsx test/verify-realtime-query.ts"
   },
   "keywords": [
     "pusher",

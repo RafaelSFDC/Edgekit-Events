@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Hash, Users, Lock, Radio, Send, RefreshCw } from 'lucide-react';
 import type { ChannelStat } from '../types';
 import { useI18n } from '../i18n/context';
+import { useStatsQuery } from '../hooks/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,22 +15,23 @@ import {
 } from '@/components/ui/empty';
 
 interface ChannelExplorerProps {
-  channels: Record<string, { user_count: number }>;
-  onRefresh: () => void;
+  channels?: Record<string, { user_count: number }>;
+  onRefresh?: () => void;
   onSelectChannelForTrigger: (channelName: string) => void;
   isRefreshing?: boolean;
 }
 
 export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
-  channels,
-  onRefresh,
+  channels: propChannels,
+  onRefresh: propOnRefresh,
   onSelectChannelForTrigger,
-  isRefreshing: externalRefreshing,
+  isRefreshing: propIsRefreshing,
 }) => {
   const { t } = useI18n();
-  const [internalRefreshing, setInternalRefreshing] = useState(false);
+  const { data: statsData, isFetching, refetch } = useStatsQuery();
 
-  const isRefreshing = externalRefreshing ?? internalRefreshing;
+  const channels = propChannels ?? statsData?.channels ?? {};
+  const isRefreshing = propIsRefreshing ?? isFetching;
 
   const channelList: ChannelStat[] = Object.entries(channels).map(([name, data]) => ({
     name,
@@ -39,9 +41,11 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
   }));
 
   const handleRefreshClick = () => {
-    setInternalRefreshing(true);
-    onRefresh();
-    setTimeout(() => setInternalRefreshing(false), 500);
+    if (propOnRefresh) {
+      propOnRefresh();
+    } else {
+      refetch();
+    }
   };
 
   return (

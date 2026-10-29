@@ -32,14 +32,4 @@ export interface AppStats {
   channels: Record<string, { user_count: number }>;
   debug_listeners: number;
   timestamp: number;
-  app?: {
-    id: string;
-    key: string;
-  };
-}
-
-export interface AppCredentials {
-  appId: string;
-  appKey: string;
-  appSecret: string;
 }

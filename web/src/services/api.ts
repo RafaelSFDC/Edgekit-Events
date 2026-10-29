@@ -1,27 +1,8 @@
 import type { AppStats } from '../types';
 
-export interface AuthMeResponse {
+export interface AuthStatusResponse {
   authenticated: boolean;
-  app?: {
-    id: string;
-    key: string;
-  };
-}
-
-export interface LoginResponse {
-  success: boolean;
-  authenticated: boolean;
-  app?: {
-    id: string;
-    key: string;
-  };
   error?: string;
-}
-
-export interface LogoutResponse {
-  success: boolean;
-  authenticated: boolean;
-  message?: string;
 }
 
 export interface TriggerPayload {
@@ -48,11 +29,17 @@ export class ApiError extends Error {
   }
 }
 
+const API_BASE =
+  (typeof import.meta !== 'undefined' && import.meta.env
+    ? (import.meta.env.VITE_API_BASE_URL as string | undefined)
+    : '') || '';
+
 /**
- * 1. Verifica se já existe sessão ativa via Cookie HttpOnly
+ * 1. Verifica se já existe sessão ativa via Cookie HttpOnly (Sim ou Não)
+ * Nenhuma informação sobre tokens, keys ou IDs transita para o cliente
  */
-export async function fetchAuthMe(): Promise<AuthMeResponse> {
-  const res = await fetch('/api/v1/auth/me', {
+export async function fetchAuthMe(): Promise<AuthStatusResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
     credentials: 'include',
   });
 
@@ -67,34 +54,35 @@ export async function fetchAuthMe(): Promise<AuthMeResponse> {
 }
 
 /**
- * 2. Autentica a aplicação via Secret Key estabelecendo o Cookie HttpOnly
+ * 2. Autentica a aplicação via Passkey estabelecendo o Cookie HttpOnly seguro
+ * O servidor responde unicamente com { authenticated: true }
  */
-export async function loginAuth(secret: string): Promise<LoginResponse> {
-  const res = await fetch('/api/v1/auth/login', {
+export async function loginAuth(passkey: string): Promise<AuthStatusResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     credentials: 'include',
-    body: JSON.stringify({ secret: secret.trim() }),
+    body: JSON.stringify({ passkey: passkey.trim() }),
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({ authenticated: false }));
   if (!res.ok || !data.authenticated) {
     throw new ApiError(
-      data.error || 'Credenciais inválidas. Verifique a Secret Key.',
+      data.error || 'Passkey inválida. Verifique sua chave de acesso.',
       res.status
     );
   }
 
-  return data;
+  return { authenticated: true };
 }
 
 /**
  * 3. Encerra a sessão removendo o Cookie HttpOnly
  */
-export async function logoutAuth(): Promise<LogoutResponse> {
-  const res = await fetch('/api/v1/auth/logout', {
+export async function logoutAuth(): Promise<AuthStatusResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/auth/logout`, {
     method: 'POST',
     credentials: 'include',
   });
@@ -110,7 +98,7 @@ export async function logoutAuth(): Promise<LogoutResponse> {
  * 4. Obtém as métricas agregadas da aplicação e canais ativos
  */
 export async function fetchStats(): Promise<AppStats> {
-  const res = await fetch('/api/v1/stats', {
+  const res = await fetch(`${API_BASE}/api/v1/stats`, {
     credentials: 'include',
   });
 
@@ -125,7 +113,7 @@ export async function fetchStats(): Promise<AppStats> {
  * 5. Dispara um evento para canais específicos
  */
 export async function triggerEvent(payload: TriggerPayload): Promise<TriggerResponse> {
-  const res = await fetch('/api/v1/trigger', {
+  const res = await fetch(`${API_BASE}/api/v1/trigger`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

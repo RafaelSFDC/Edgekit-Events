@@ -14,24 +14,34 @@ export class AppSessionDO extends DurableObject<Env> {
   // In-memory cache of subscribers per channel while DO is awake
   private channelMap: Map<string, Set<WebSocket>> = new Map();
   private isMapHydrated = false;
-  // Active dashboard live debug inspector sockets
-  private debugListeners: Set<WebSocket> = new Set();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    try {
+      if (typeof WebSocketRequestResponsePair !== "undefined") {
+        this.ctx.setWebSocketAutoResponse(
+          new WebSocketRequestResponsePair("ping", "pong")
+        );
+      }
+    } catch {}
   }
 
   /**
-   * Dispatches real-time debug telemetry to connected Dashboard clients
+   * Dispatches real-time debug telemetry to connected Dashboard clients.
+   * Uses tagged WebSockets via Cloudflare Hibernation API so listeners
+   * survive DO hibernation and waking cycles seamlessly.
    */
   private notifyDebugListeners(eventData: Record<string, any>): void {
-    if (this.debugListeners.size === 0) return;
+    const debugSockets = this.ctx.getWebSockets("debug");
+    if (debugSockets.length === 0) return;
     const payload = JSON.stringify(eventData);
-    for (const ws of this.debugListeners) {
+    for (const ws of debugSockets) {
       try {
         ws.send(payload);
       } catch {
-        this.debugListeners.delete(ws);
+        try {
+          ws.close();
+        } catch {}
       }
     }
   }
@@ -43,7 +53,8 @@ export class AppSessionDO extends DurableObject<Env> {
     if (this.isMapHydrated) return;
 
     this.channelMap.clear();
-    const sockets = this.ctx.getWebSockets();
+    // Only rehydrate client sockets (avoid inspecting debug sockets)
+    const sockets = this.ctx.getWebSockets("client");
 
     for (const ws of sockets) {
       const attachment = ws.deserializeAttachment() as SocketAttachment | null;
@@ -92,8 +103,8 @@ export class AppSessionDO extends DurableObject<Env> {
         channels: {},
       };
 
-      // Server accepts WebSocket with Cloudflare Hibernation API
-      this.ctx.acceptWebSocket(server);
+      // Server accepts WebSocket with Cloudflare Hibernation API tagged as "client"
+      this.ctx.acceptWebSocket(server, ["client"]);
       server.serializeAttachment(attachment);
 
       // Send initial handshake message (Pusher protocol v7)
@@ -125,8 +136,9 @@ export class AppSessionDO extends DurableObject<Env> {
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
 
-      this.ctx.acceptWebSocket(server);
-      this.debugListeners.add(server);
+      // Server accepts debug WebSocket with Cloudflare Hibernation API tagged as "debug"
+      this.ctx.acceptWebSocket(server, ["debug"]);
+      server.serializeAttachment({ type: "debug" });
 
       server.send(
         JSON.stringify({
@@ -192,14 +204,14 @@ export class AppSessionDO extends DurableObject<Env> {
         }
       }
 
-      const rawSockets = this.ctx.getWebSockets();
-      const activeSockets = Math.max(0, rawSockets.length - this.debugListeners.size);
+      const clientSockets = this.ctx.getWebSockets("client");
+      const debugSockets = this.ctx.getWebSockets("debug");
 
       return Response.json({
-        active_sockets: activeSockets,
+        active_sockets: clientSockets.length,
         channels_count: Object.keys(channelsData).length,
         channels: channelsData,
-        debug_listeners: this.debugListeners.size,
+        debug_listeners: debugSockets.length,
         timestamp: Date.now(),
       });
     }
@@ -237,6 +249,17 @@ export class AppSessionDO extends DurableObject<Env> {
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     const raw = typeof message === "string" ? message : new TextDecoder().decode(message);
 
+    // If this is a debug listener socket, handle ping / pong
+    const tags = this.ctx.getTags(ws);
+    if (tags.includes("debug")) {
+      if (raw === "ping" || raw.includes('"ping"')) {
+        try {
+          ws.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+        } catch {}
+      }
+      return;
+    }
+
     let parsed: PusherMessage;
     try {
       parsed = JSON.parse(raw);
@@ -247,7 +270,7 @@ export class AppSessionDO extends DurableObject<Env> {
     const { event, data } = parsed;
 
     // 1. Heartbeat Ping
-    if (event === "pusher:ping") {
+    if (event === "pusher:ping" || (parsed as any).type === "ping") {
       ws.send(JSON.stringify({ event: "pusher:pong", data: "{}" }));
       return;
     }
@@ -280,8 +303,8 @@ export class AppSessionDO extends DurableObject<Env> {
     _reason: string,
     _wasClean: boolean
   ): Promise<void> {
-    if (this.debugListeners.has(ws)) {
-      this.debugListeners.delete(ws);
+    const tags = this.ctx.getTags(ws);
+    if (tags.includes("debug")) {
       return;
     }
 
@@ -321,9 +344,6 @@ export class AppSessionDO extends DurableObject<Env> {
    * Handle WebSocket errors
    */
   async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
-    if (this.debugListeners.has(ws)) {
-      this.debugListeners.delete(ws);
-    }
     console.error("WebSocket error:", error);
     try {
       ws.close(1011, "Internal Server Error");

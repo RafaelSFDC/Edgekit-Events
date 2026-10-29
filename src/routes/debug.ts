@@ -42,23 +42,23 @@ export function authenticateRequest(
   return null;
 }
 
-// 1. Login: Valida a secret e estabelece o cookie HttpOnly seguro
+// 1. Login: Valida a passkey e estabelece o cookie HttpOnly seguro
 debugRoute.post("/api/v1/auth/login", async (c) => {
-  let secret: string | undefined;
+  let passkey: string | undefined;
 
   try {
-    const body = (await c.req.json()) as { secret?: string };
-    secret = body.secret;
+    const body = (await c.req.json()) as { passkey?: string; secret?: string };
+    passkey = body.passkey || body.secret;
   } catch {}
 
-  if (!secret) {
-    secret = c.req.header("x-app-secret");
+  if (!passkey) {
+    passkey = c.req.header("x-app-secret");
   }
 
-  const app = authenticateRequest(c, secret);
-  if (!app || !secret) {
+  const app = authenticateRequest(c, passkey);
+  if (!app || !passkey) {
     return c.json(
-      { success: false, authenticated: false, error: "Credenciais inválidas. Verifique a Secret Key." },
+      { authenticated: false, error: "Passkey inválida." },
       401
     );
   }
@@ -67,7 +67,7 @@ debugRoute.post("/api/v1/auth/login", async (c) => {
     c.req.url.includes("localhost") || c.req.url.includes("127.0.0.1");
 
   // Define cookie HttpOnly para nunca ser acessado por scripts do navegador (XSS protection)
-  setCookie(c, AUTH_COOKIE_NAME, secret.trim(), {
+  setCookie(c, AUTH_COOKIE_NAME, passkey.trim(), {
     httpOnly: true,
     secure: !isLocalhost,
     sameSite: "Lax",
@@ -76,32 +76,27 @@ debugRoute.post("/api/v1/auth/login", async (c) => {
   });
 
   return c.json({
-    success: true,
     authenticated: true,
-    app: {
-      id: app.id,
-      key: app.key,
-    },
   });
 });
 
 // Alias para compatibilidade anterior de /api/v1/verify-secret
 debugRoute.post("/api/v1/verify-secret", async (c) => {
-  let secret: string | undefined;
+  let passkey: string | undefined;
 
   try {
-    const body = (await c.req.json()) as { secret?: string };
-    secret = body.secret;
+    const body = (await c.req.json()) as { passkey?: string; secret?: string };
+    passkey = body.passkey || body.secret;
   } catch {}
 
-  if (!secret) {
-    secret = c.req.header("x-app-secret");
+  if (!passkey) {
+    passkey = c.req.header("x-app-secret");
   }
 
-  const app = authenticateRequest(c, secret);
-  if (!app || !secret) {
+  const app = authenticateRequest(c, passkey);
+  if (!app || !passkey) {
     return c.json(
-      { valid: false, authenticated: false, error: "Credenciais inválidas. Verifique a Secret Key." },
+      { authenticated: false, error: "Passkey inválida." },
       401
     );
   }
@@ -109,7 +104,7 @@ debugRoute.post("/api/v1/verify-secret", async (c) => {
   const isLocalhost =
     c.req.url.includes("localhost") || c.req.url.includes("127.0.0.1");
 
-  setCookie(c, AUTH_COOKIE_NAME, secret.trim(), {
+  setCookie(c, AUTH_COOKIE_NAME, passkey.trim(), {
     httpOnly: true,
     secure: !isLocalhost,
     sameSite: "Lax",
@@ -118,12 +113,7 @@ debugRoute.post("/api/v1/verify-secret", async (c) => {
   });
 
   return c.json({
-    valid: true,
     authenticated: true,
-    app: {
-      id: app.id,
-      key: app.key,
-    },
   });
 });
 
@@ -131,15 +121,11 @@ debugRoute.post("/api/v1/verify-secret", async (c) => {
 debugRoute.get("/api/v1/auth/me", (c) => {
   const app = authenticateRequest(c);
   if (!app) {
-    return c.json({ authenticated: false }, 401);
+    return c.json({ authenticated: false });
   }
 
   return c.json({
     authenticated: true,
-    app: {
-      id: app.id,
-      key: app.key,
-    },
   });
 });
 
@@ -150,9 +136,7 @@ debugRoute.post("/api/v1/auth/logout", (c) => {
   });
 
   return c.json({
-    success: true,
     authenticated: false,
-    message: "Sessão encerrada com sucesso.",
   });
 });
 
@@ -182,13 +166,7 @@ debugRoute.get("/api/v1/stats", async (c) => {
   }
 
   const data = (await res.json()) as Record<string, any>;
-  return c.json({
-    app: {
-      id: targetApp.id,
-      key: targetApp.key,
-    },
-    ...data,
-  });
+  return c.json(data);
 });
 
 // 5. Conexão WebSocket para o Live Debug Console

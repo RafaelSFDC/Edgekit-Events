@@ -1,24 +1,32 @@
 import React from 'react';
 import { Users, Hash, Zap, Cpu } from 'lucide-react';
 import { useI18n } from '../i18n/context';
+import { useStatsQuery, useEventsQuery } from '../hooks/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface StatsBarProps {
-  activeSockets: number;
-  channelsCount: number;
-  sessionEventsCount: number;
-  isHibernating: boolean;
+  activeSockets?: number;
+  channelsCount?: number;
+  sessionEventsCount?: number;
+  isHibernating?: boolean;
 }
 
 export const StatsBar: React.FC<StatsBarProps> = ({
-  activeSockets,
-  channelsCount,
-  sessionEventsCount,
-  isHibernating,
+  activeSockets: propActiveSockets,
+  channelsCount: propChannelsCount,
+  sessionEventsCount: propSessionEventsCount,
+  isHibernating: propIsHibernating,
 }) => {
   const { t } = useI18n();
+  const { data: stats } = useStatsQuery();
+  const { data: events = [] } = useEventsQuery();
+
+  const activeSockets = propActiveSockets ?? stats?.active_sockets ?? 0;
+  const channelsCount = propChannelsCount ?? stats?.channels_count ?? 0;
+  const sessionEventsCount = propSessionEventsCount ?? events.length;
+  const isHibernating = propIsHibernating ?? (activeSockets === 0);
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">

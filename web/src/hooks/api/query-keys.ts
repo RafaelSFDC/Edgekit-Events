@@ -32,4 +32,7 @@ export const queryKeys = {
     detail: () => ['stats', 'detail'] as const,
   },
   channels: createEntityQueryKeys<Record<string, never>, string>('channels'),
+  events: {
+    all: ['events'] as const,
+  },
 };

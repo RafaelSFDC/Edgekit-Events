@@ -10,13 +10,13 @@ interface UseStatsOptions {
 }
 
 export function useStatsQuery(options: UseStatsOptions = {}) {
-  const { refetchInterval = 10000, enabled = true } = options;
+  const { refetchInterval, enabled = true } = options;
 
   return useQuery<AppStats>({
     ...defaultListQueryOptions,
     queryKey: queryKeys.stats.all,
     queryFn: fetchStats,
-    refetchInterval,
+    ...(refetchInterval !== undefined ? { refetchInterval } : {}),
     enabled,
   });
 }

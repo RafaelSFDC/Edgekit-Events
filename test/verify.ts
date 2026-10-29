@@ -119,14 +119,14 @@ async function runTests() {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ secret: "secret-default" }),
+      body: JSON.stringify({ passkey: "secret-default" }),
     },
     mockEnv
   );
   assert.strictEqual(loginRes.status, 200);
   const loginData: any = await loginRes.json();
   assert.strictEqual(loginData.authenticated, true);
-  assert.strictEqual(loginData.app.id, "app-default");
+  assert.strictEqual(loginData.app, undefined, "Nenhum dado de app/chave deve vazar no login");
 
   // Verifica se o cookie HttpOnly foi enviado no cabeçalho Set-Cookie
   const setCookieHeader = loginRes.headers.get("Set-Cookie");
@@ -147,11 +147,13 @@ async function runTests() {
   assert.strictEqual(meRes.status, 200);
   const meData: any = await meRes.json();
   assert.strictEqual(meData.authenticated, true);
-  assert.strictEqual(meData.app.id, "app-default");
+  assert.strictEqual(meData.app, undefined, "Nenhum dado de app/chave deve vazar no me");
 
-  // Testa falha sem o cookie
+  // Testa rota sem o cookie: responde authenticated: false
   const unauthRes = await debugRoute.request("/api/v1/auth/me", {}, mockEnv);
-  assert.strictEqual(unauthRes.status, 401);
+  assert.strictEqual(unauthRes.status, 200);
+  const unauthData: any = await unauthRes.json();
+  assert.strictEqual(unauthData.authenticated, false);
 
   // Testa Logout
   const logoutRes = await debugRoute.request(
@@ -160,6 +162,8 @@ async function runTests() {
     mockEnv
   );
   assert.strictEqual(logoutRes.status, 200);
+  const logoutData: any = await logoutRes.json();
+  assert.strictEqual(logoutData.authenticated, false);
   const logoutCookie = logoutRes.headers.get("Set-Cookie");
   assert.ok(logoutCookie, "Logout deve atualizar Set-Cookie para expirar");
 
