@@ -161,17 +161,17 @@ export const App: React.FC = () => {
         <Tabs
           value={activeTab}
           onValueChange={(val) => setActiveTab(val as TabValue)}
-          className="space-y-6"
+          className="flex flex-col gap-6"
         >
           <TabsList variant="line" className="border-b border-border w-full justify-start pb-0 h-auto gap-2 sm:gap-4 overflow-x-auto">
             <TabsTrigger
               value="console"
-              className="py-3 px-3 text-xs sm:text-sm font-medium data-active:text-sky-600 dark:data-active:text-sky-400 group-data-[variant=line]/tabs-list:data-active:after:bg-sky-600 dark:group-data-[variant=line]/tabs-list:data-active:after:bg-sky-400"
+              className="py-3 px-3 text-xs sm:text-sm font-medium"
             >
-              <Terminal className="w-4 h-4 mr-1.5" />
+              <Terminal className="size-4 mr-1.5" />
               <span>{t.tabs.debugConsole}</span>
               {events.length > 0 && (
-                <Badge variant="outline" className="ml-1.5 px-1.5 py-0 text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20">
+                <Badge variant="secondary" className="ml-1.5 text-xs">
                   {events.length}
                 </Badge>
               )}
@@ -179,20 +179,20 @@ export const App: React.FC = () => {
 
             <TabsTrigger
               value="simulator"
-              className="py-3 px-3 text-xs sm:text-sm font-medium data-active:text-sky-600 dark:data-active:text-sky-400 group-data-[variant=line]/tabs-list:data-active:after:bg-sky-600 dark:group-data-[variant=line]/tabs-list:data-active:after:bg-sky-400"
+              className="py-3 px-3 text-xs sm:text-sm font-medium"
             >
-              <Send className="w-4 h-4 mr-1.5" />
+              <Send className="size-4 mr-1.5" />
               <span>{t.tabs.eventSimulator}</span>
             </TabsTrigger>
 
             <TabsTrigger
               value="channels"
-              className="py-3 px-3 text-xs sm:text-sm font-medium data-active:text-sky-600 dark:data-active:text-sky-400 group-data-[variant=line]/tabs-list:data-active:after:bg-sky-600 dark:group-data-[variant=line]/tabs-list:data-active:after:bg-sky-400"
+              className="py-3 px-3 text-xs sm:text-sm font-medium"
             >
-              <Hash className="w-4 h-4 mr-1.5" />
+              <Hash className="size-4 mr-1.5" />
               <span>{t.tabs.channelsExplorer}</span>
               {stats.channels_count > 0 && (
-                <Badge variant="outline" className="ml-1.5 px-1.5 py-0 text-[10px] bg-secondary text-secondary-foreground border-border">
+                <Badge variant="secondary" className="ml-1.5 text-xs">
                   {stats.channels_count}
                 </Badge>
               )}
@@ -200,9 +200,9 @@ export const App: React.FC = () => {
 
             <TabsTrigger
               value="snippets"
-              className="py-3 px-3 text-xs sm:text-sm font-medium data-active:text-sky-600 dark:data-active:text-sky-400 group-data-[variant=line]/tabs-list:data-active:after:bg-sky-600 dark:group-data-[variant=line]/tabs-list:data-active:after:bg-sky-400"
+              className="py-3 px-3 text-xs sm:text-sm font-medium"
             >
-              <Code2 className="w-4 h-4 mr-1.5" />
+              <Code2 className="size-4 mr-1.5" />
               <span>{t.tabs.snippets}</span>
             </TabsTrigger>
           </TabsList>

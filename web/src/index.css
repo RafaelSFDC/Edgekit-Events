@@ -92,7 +92,7 @@
   }
 }
 
-/* Custom scrollbars for debug feeds and logs */
+/* Custom scrollbars using semantic theme variables */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -101,16 +101,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--border);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #27272a;
-}
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--muted-foreground);
 }

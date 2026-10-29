@@ -5,6 +5,13 @@ import { useI18n } from '../i18n/context';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+} from '@/components/ui/empty';
 
 interface ChannelExplorerProps {
   channels: Record<string, { user_count: number }>;
@@ -38,7 +45,7 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
   };
 
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-xs">
       <CardHeader className="flex flex-row items-center justify-between pb-6">
         <div>
           <CardTitle className="text-base font-semibold text-foreground">
@@ -53,46 +60,58 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
           size="sm"
           onClick={handleRefreshClick}
           disabled={isRefreshing}
-          className="flex items-center space-x-1.5"
+          className="gap-1.5"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`size-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
           <span>{t.channels.refresh}</span>
         </Button>
       </CardHeader>
 
       <CardContent>
         {channelList.length === 0 ? (
-          <div className="py-16 text-center">
-            <Hash className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">
-              {t.channels.noChannels}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Conecte um cliente via <code className="text-foreground font-mono">pusher-js</code> ou dispare um evento para abrir um canal.
-            </p>
-          </div>
+          <Empty className="py-16">
+            <EmptyMedia variant="icon">
+              <Hash className="size-4 text-muted-foreground" />
+            </EmptyMedia>
+            <EmptyHeader>
+              <EmptyTitle>{t.channels.noChannels}</EmptyTitle>
+              <EmptyDescription>
+                Conecte um cliente via{' '}
+                <code className="text-foreground font-mono">pusher-js</code> ou dispare um evento para abrir um canal.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {channelList.map((ch) => (
               <Card
                 key={ch.name}
-                className="bg-secondary/40 border-border/80 flex flex-col justify-between hover:border-sky-500/40 transition-colors shadow-xs"
+                className="shadow-xs bg-card border-border/80 flex flex-col justify-between hover:border-primary/40 transition-colors"
               >
                 <CardContent className="p-4 pb-2">
                   <div className="flex items-center justify-between mb-2">
                     {ch.isPresence ? (
-                      <Badge variant="outline" className="space-x-1 text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
-                        <Users className="w-3 h-3" />
+                      <Badge
+                        variant="outline"
+                        className="gap-1 text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                      >
+                        <Users className="size-3" />
                         <span>{t.channels.presenceChannel}</span>
                       </Badge>
                     ) : ch.isPrivate ? (
-                      <Badge variant="outline" className="space-x-1 text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">
-                        <Lock className="w-3 h-3" />
+                      <Badge
+                        variant="outline"
+                        className="gap-1 text-xs border-border text-foreground bg-secondary"
+                      >
+                        <Lock className="size-3" />
                         <span>{t.channels.privateChannel}</span>
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="space-x-1 text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20">
-                        <Radio className="w-3 h-3" />
+                      <Badge
+                        variant="outline"
+                        className="gap-1 text-xs border-primary/30 text-primary bg-primary/10"
+                      >
+                        <Radio className="size-3" />
                         <span>{t.channels.publicChannel}</span>
                       </Badge>
                     )}
@@ -102,8 +121,8 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
                     </span>
                   </div>
 
-                  <div className="flex items-center space-x-2 my-2">
-                    <Hash className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div className="flex items-center gap-2 my-2">
+                    <Hash className="size-4 text-muted-foreground shrink-0" />
                     <span className="font-mono font-semibold text-sm text-foreground break-all">
                       {ch.name}
                     </span>
@@ -112,12 +131,12 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
 
                 <CardFooter className="p-4 pt-2 border-t border-border/60 flex justify-end">
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="link"
+                    size="xs"
                     onClick={() => onSelectChannelForTrigger(ch.name)}
-                    className="text-xs text-sky-400 hover:text-sky-300 font-medium p-0 h-auto"
+                    className="text-xs text-primary gap-1 p-0 h-auto"
                   >
-                    <Send className="w-3 h-3 mr-1" />
+                    <Send className="size-3" />
                     <span>{t.channels.triggerInThisChannel}</span>
                   </Button>
                 </CardFooter>

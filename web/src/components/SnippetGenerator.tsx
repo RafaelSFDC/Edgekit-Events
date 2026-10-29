@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, FolderCode } from 'lucide-react';
 import { useI18n } from '../i18n/context';
 import { copyToClipboard } from '../lib/utils';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 interface SnippetGeneratorProps {
   appKey: string;
@@ -213,23 +214,23 @@ Console.WriteLine(result);`,
   };
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6">
-        <div>
-          <CardTitle className="text-base font-semibold text-foreground">
-            {t.snippets.title}
-          </CardTitle>
-          <CardDescription className="text-xs text-muted-foreground mt-0.5">
-            {t.snippets.subtitle}
-          </CardDescription>
-        </div>
+    <Card className="shadow-xs">
+      <Tabs
+        value={activeTab}
+        onValueChange={(val) => setActiveTab(val as SnippetTab)}
+      >
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6">
+          <div>
+            <CardTitle className="text-base font-semibold text-foreground">
+              {t.snippets.title}
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-0.5">
+              {t.snippets.subtitle}
+            </CardDescription>
+          </div>
 
-        {/* Tab navigation */}
-        <Tabs
-          value={activeTab}
-          onValueChange={(val) => setActiveTab(val as SnippetTab)}
-        >
-          <TabsList className="bg-secondary p-1 rounded-lg border border-border">
+          {/* Tab navigation */}
+          <TabsList className="bg-muted p-1">
             <TabsTrigger value="js" className="text-xs px-2.5 py-1">
               {t.snippets.tabJavascript}
             </TabsTrigger>
@@ -255,47 +256,56 @@ Console.WriteLine(result);`,
               {t.snippets.tabCurl}
             </TabsTrigger>
           </TabsList>
-        </Tabs>
-      </CardHeader>
+        </CardHeader>
 
-      <CardContent>
-        {/* Code Display Area */}
-        <div className="relative">
-          <div className="absolute top-3 right-3 z-10">
-            <Button
-              variant="outline"
-              size="xs"
-              onClick={handleCopy}
-              className="bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400 mr-1" />
-                  <span className="text-emerald-400">{t.common.copied}</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 mr-1" />
-                  <span>{t.common.copy}</span>
-                </>
-              )}
-            </Button>
+        <CardContent>
+          {/* Code Display Area using TabsContent */}
+          <div className="relative">
+            <div className="absolute top-3 right-3 z-10">
+              <Button
+                variant="secondary"
+                size="xs"
+                onClick={handleCopy}
+                className="gap-1 shadow-xs"
+              >
+                {copied ? (
+                  <>
+                    <Check className="size-3.5 text-emerald-500" />
+                    <span className="text-emerald-500">{t.common.copied}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3.5" />
+                    <span>{t.common.copy}</span>
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {Object.entries(snippets).map(([lang, code]) => (
+              <TabsContent key={lang} value={lang} className="mt-0">
+                <ScrollArea className="rounded-lg border border-border bg-muted/60 max-h-96">
+                  <pre className="p-4 text-xs font-mono text-foreground leading-relaxed">
+                    <code>{code}</code>
+                  </pre>
+                </ScrollArea>
+              </TabsContent>
+            ))}
           </div>
 
-          <ScrollArea className="rounded-xl border border-border/80 dark:border-zinc-800 bg-zinc-950 max-h-[460px]">
-            <pre className="p-4 text-xs font-mono text-zinc-200 leading-relaxed">
-              <code>{snippets[activeTab]}</code>
-            </pre>
-          </ScrollArea>
-        </div>
+          <Separator className="my-4" />
 
-        <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
-          <span>💡 {t.snippets.viewAllSnippets}</span>
-          <code className="text-[11px] bg-secondary px-2 py-0.5 rounded border border-border font-mono text-foreground">
-            snippets/
-          </code>
-        </div>
-      </CardContent>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <FolderCode className="size-3.5 text-primary" />
+              <span>{t.snippets.viewAllSnippets}</span>
+            </span>
+            <code className="text-xs bg-secondary px-2 py-0.5 rounded border border-border font-mono text-foreground">
+              snippets/
+            </code>
+          </div>
+        </CardContent>
+      </Tabs>
     </Card>
   );
 };

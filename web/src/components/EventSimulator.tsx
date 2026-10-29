@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 interface EventSimulatorProps {
   isAuthenticated: boolean;
@@ -128,7 +129,7 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
   };
 
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-xs">
       <CardHeader className="pb-6">
         <CardTitle className="text-base font-semibold text-foreground">
           {t.simulator.title}
@@ -138,22 +139,22 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="flex flex-col gap-6">
         {/* Warning if not authenticated with HttpOnly cookie */}
         {!isAuthenticated && (
-          <Alert className="bg-amber-500/10 border-amber-500/30 text-amber-400 flex items-center justify-between p-4">
-            <div className="flex items-center space-x-3 text-xs">
-              <AlertTriangle className="w-5 h-5 shrink-0" />
-              <AlertDescription className="text-amber-300 font-medium">
+          <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-between p-4">
+            <div className="flex items-center gap-3 text-xs">
+              <AlertTriangle className="size-5 shrink-0" />
+              <AlertDescription className="text-foreground font-medium">
                 {t.simulator.needSecretWarning}
               </AlertDescription>
             </div>
             <Button
               size="sm"
               onClick={onOpenSecretModal}
-              className="bg-amber-500 text-slate-950 font-semibold hover:bg-amber-400 shrink-0"
+              className="gap-1.5 shrink-0"
             >
-              <Key className="w-3.5 h-3.5 mr-1.5" />
+              <Key className="size-3.5" />
               <span>Conectar Agora</span>
             </Button>
           </Alert>
@@ -161,8 +162,8 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
 
         {/* Preset template selector */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground flex items-center space-x-1 mr-1">
-            <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 mr-1">
+            <Sparkles className="size-3.5 text-primary" />
             <span>{t.simulator.templatePreset}</span>
           </span>
           <Button
@@ -192,9 +193,9 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleTrigger} className="space-y-4">
+        <form onSubmit={handleTrigger} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5">
               <Label htmlFor="sim-channel" className="text-xs font-medium text-foreground">
                 {t.simulator.channelLabel}
               </Label>
@@ -209,7 +210,7 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5">
               <Label htmlFor="sim-event" className="text-xs font-medium text-foreground">
                 {t.simulator.eventLabel}
               </Label>
@@ -225,7 +226,7 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
             </div>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="sim-payload" className="text-xs font-medium text-foreground">
                 {t.simulator.payloadLabel}
@@ -235,9 +236,9 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
                 variant="ghost"
                 size="xs"
                 onClick={handleFormatJson}
-                className="text-[11px] text-sky-400 hover:text-sky-300"
+                className="text-xs text-primary hover:text-primary/80 gap-1"
               >
-                <Code className="w-3 h-3 mr-1" />
+                <Code className="size-3" />
                 <span>{t.simulator.formatJson}</span>
               </Button>
             </div>
@@ -246,7 +247,7 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
               value={payloadText}
               onChange={(e) => setPayloadText(e.target.value)}
               rows={8}
-              className="bg-zinc-950 font-mono text-xs text-emerald-400 resize-y"
+              className="bg-muted/60 font-mono text-xs text-foreground resize-y"
               required
             />
           </div>
@@ -255,16 +256,16 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
           {status && (
             <Alert
               variant={status.type === 'error' ? 'destructive' : 'default'}
-              className={`p-3 text-xs flex items-center space-x-2 ${
-                status.type === 'success'
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                  : ''
-              }`}
+              className={cn(
+                'p-3 text-xs flex items-center gap-2',
+                status.type === 'success' &&
+                  'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+              )}
             >
               {status.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
               ) : (
-                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <AlertTriangle className="size-4 shrink-0" />
               )}
               <AlertDescription className="font-medium text-inherit">
                 {status.message}
@@ -276,9 +277,9 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
             <Button
               type="submit"
               disabled={loading}
-              className="px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
+              className="gap-2"
             >
-              <Send className="w-4 h-4 mr-2" />
+              <Send className="size-4" />
               <span>{loading ? t.simulator.triggering : t.simulator.triggerButton}</span>
             </Button>
           </div>

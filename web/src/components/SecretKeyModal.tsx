@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,17 +79,17 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md p-6">
         <DialogHeader className="gap-1">
-          <div className="flex items-center space-x-3 mb-1">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
-              <Lock className="w-5 h-5" />
+          <div className="flex items-center gap-3 mb-1">
+            <div className="size-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <Lock className="size-5" />
             </div>
             <div>
               <DialogTitle className="text-base font-semibold text-foreground">
                 {t.modal.title}
               </DialogTitle>
-              <div className="flex items-center space-x-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                <p className="text-[11px] font-semibold text-emerald-400">
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                   Sessão Segura com Cookie HttpOnly
                 </p>
               </div>
@@ -99,8 +100,8 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleLogin} className="space-y-4 mt-2">
-          <div className="space-y-1.5">
+        <form onSubmit={handleLogin} className="flex flex-col gap-4 mt-2">
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="secret-input" className="text-xs font-medium text-foreground">
               {t.modal.inputLabel}
             </Label>
@@ -124,19 +125,19 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
                 onClick={() => setShowSecret(!showSecret)}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showSecret ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </Button>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 bg-secondary/50 p-2.5 rounded-lg border border-border/80 flex items-start space-x-2">
-              <span className="text-sky-400 font-bold shrink-0">🛡️</span>
+            <p className="text-xs text-muted-foreground mt-2 bg-secondary/50 p-2.5 rounded-lg border border-border/80 flex items-start gap-2">
+              <ShieldAlert className="size-3.5 text-primary shrink-0 mt-0.5" />
               <span>{t.modal.savedNote}</span>
             </p>
           </div>
 
           {/* Feedback Alerts */}
           {error && (
-            <Alert variant="destructive" className="flex items-start space-x-2 p-3 text-xs">
-              <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />
+            <Alert variant="destructive" className="flex items-start gap-2 p-3 text-xs">
+              <ShieldAlert className="size-4 mt-0.5 shrink-0" />
               <AlertDescription className="font-medium text-inherit">
                 {error}
               </AlertDescription>
@@ -144,16 +145,16 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
           )}
 
           {success && (
-            <Alert className="flex items-center space-x-2 p-3 bg-emerald-500/10 border-emerald-500/30 text-emerald-400 text-xs">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <Alert className="flex items-center gap-2 p-3 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs">
+              <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
               <AlertDescription className="font-medium text-inherit">
                 {t.modal.success}
               </AlertDescription>
             </Alert>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-2">
+          {/* Action Buttons via DialogFooter */}
+          <DialogFooter className="flex flex-row items-center justify-between gap-2 mt-2">
             {isAuthenticated ? (
               <Button
                 type="button"
@@ -161,16 +162,16 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
                 size="sm"
                 onClick={handleLogout}
                 disabled={loading}
-                className="text-xs text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+                className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive gap-1.5"
               >
-                <LogOut className="w-4 h-4 mr-1.5" />
+                <LogOut className="size-4" />
                 <span>{t.modal.disconnect}</span>
               </Button>
             ) : (
               <div />
             )}
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="ghost"
@@ -183,12 +184,11 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
                 type="submit"
                 size="sm"
                 disabled={loading || !secretInput.trim()}
-                className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
               >
                 {loading ? t.modal.verifying : t.modal.verifyButton}
               </Button>
             </div>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
