@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { Copy, Check, Terminal } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { useI18n } from '../i18n/context';
 import { copyToClipboard } from '../lib/utils';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SnippetGeneratorProps {
   appKey: string;
@@ -9,13 +13,15 @@ interface SnippetGeneratorProps {
   host: string;
 }
 
+type SnippetTab = 'js' | 'laravel' | 'php' | 'node' | 'python' | 'go' | 'dotnet' | 'curl';
+
 export const SnippetGenerator: React.FC<SnippetGeneratorProps> = ({
   appKey,
   appId,
   host,
 }) => {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<'js' | 'laravel' | 'php' | 'node' | 'python' | 'go' | 'dotnet' | 'curl'>('js');
+  const [activeTab, setActiveTab] = useState<SnippetTab>('js');
   const [copied, setCopied] = useState(false);
 
   const keyDisplay = appKey || 'minha-chave-publica';
@@ -25,7 +31,7 @@ export const SnippetGenerator: React.FC<SnippetGeneratorProps> = ({
   const wsPort = isHttps ? 443 : (typeof window !== 'undefined' && window.location.port ? parseInt(window.location.port) : 443);
   const isTls = isHttps || wsPort === 443;
 
-  const snippets = {
+  const snippets: Record<SnippetTab, string> = {
     js: `// 1. Instale pusher-js (npm i pusher-js) ou use a CDN oficial
 import Pusher from "pusher-js";
 
@@ -207,134 +213,89 @@ Console.WriteLine(result);`,
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <Card className="shadow-sm">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6">
         <div>
-          <h3 className="text-base font-semibold text-foreground">
+          <CardTitle className="text-base font-semibold text-foreground">
             {t.snippets.title}
-          </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground mt-0.5">
             {t.snippets.subtitle}
-          </p>
+          </CardDescription>
         </div>
 
         {/* Tab navigation */}
-        <div className="flex flex-wrap items-center bg-secondary p-1 rounded-lg border border-border">
-          <button
-            onClick={() => setActiveTab('js')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'js'
-                ? 'bg-zinc-800 text-sky-400 font-semibold shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.snippets.tabJavascript}
-          </button>
-          <button
-            onClick={() => setActiveTab('laravel')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'laravel'
-                ? 'bg-zinc-800 text-sky-400 font-semibold shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.snippets.tabLaravel}
-          </button>
-          <button
-            onClick={() => setActiveTab('php')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'php'
-                ? 'bg-zinc-800 text-sky-400 font-semibold shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.snippets.tabPhp}
-          </button>
-          <button
-            onClick={() => setActiveTab('node')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'node'
-                ? 'bg-zinc-800 text-sky-400 font-semibold shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.snippets.tabNode}
-          </button>
-          <button
-            onClick={() => setActiveTab('python')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'python'
-                ? 'bg-zinc-800 text-sky-400 font-semibold shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.snippets.tabPython}
-          </button>
-          <button
-            onClick={() => setActiveTab('go')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'go'
-                ? 'bg-zinc-800 text-sky-400 font-semibold shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.snippets.tabGo}
-          </button>
-          <button
-            onClick={() => setActiveTab('dotnet')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'dotnet'
-                ? 'bg-zinc-800 text-sky-400 font-semibold shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.snippets.tabDotnet}
-          </button>
-          <button
-            onClick={() => setActiveTab('curl')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'curl'
-                ? 'bg-zinc-800 text-sky-400 font-semibold shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.snippets.tabCurl}
-          </button>
-        </div>
-      </div>
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => setActiveTab(val as SnippetTab)}
+        >
+          <TabsList className="bg-secondary p-1 rounded-lg border border-border">
+            <TabsTrigger value="js" className="text-xs px-2.5 py-1">
+              {t.snippets.tabJavascript}
+            </TabsTrigger>
+            <TabsTrigger value="laravel" className="text-xs px-2.5 py-1">
+              {t.snippets.tabLaravel}
+            </TabsTrigger>
+            <TabsTrigger value="php" className="text-xs px-2.5 py-1">
+              {t.snippets.tabPhp}
+            </TabsTrigger>
+            <TabsTrigger value="node" className="text-xs px-2.5 py-1">
+              {t.snippets.tabNode}
+            </TabsTrigger>
+            <TabsTrigger value="python" className="text-xs px-2.5 py-1">
+              {t.snippets.tabPython}
+            </TabsTrigger>
+            <TabsTrigger value="go" className="text-xs px-2.5 py-1">
+              {t.snippets.tabGo}
+            </TabsTrigger>
+            <TabsTrigger value="dotnet" className="text-xs px-2.5 py-1">
+              {t.snippets.tabDotnet}
+            </TabsTrigger>
+            <TabsTrigger value="curl" className="text-xs px-2.5 py-1">
+              {t.snippets.tabCurl}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </CardHeader>
 
-      {/* Code Display Area */}
-      <div className="relative">
-        <div className="absolute top-3 right-3 z-10">
-          <button
-            onClick={handleCopy}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-300 border border-zinc-700 shadow-sm transition-colors"
-          >
-            {copied ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400">{t.common.copied}</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>{t.common.copy}</span>
-              </>
-            )}
-          </button>
+      <CardContent>
+        {/* Code Display Area */}
+        <div className="relative">
+          <div className="absolute top-3 right-3 z-10">
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={handleCopy}
+              className="bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400 mr-1" />
+                  <span className="text-emerald-400">{t.common.copied}</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 mr-1" />
+                  <span>{t.common.copy}</span>
+                </>
+              )}
+            </Button>
+          </div>
+
+          <ScrollArea className="rounded-xl border border-zinc-800 bg-zinc-950 max-h-[460px]">
+            <pre className="p-4 text-xs font-mono text-zinc-200 leading-relaxed">
+              <code>{snippets[activeTab]}</code>
+            </pre>
+          </ScrollArea>
         </div>
 
-        <pre className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-xs font-mono text-zinc-200 overflow-x-auto leading-relaxed">
-          <code>{snippets[activeTab]}</code>
-        </pre>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
-        <span>💡 {t.snippets.viewAllSnippets}</span>
-        <code className="text-[11px] bg-secondary px-2 py-0.5 rounded border border-border font-mono text-foreground">
-          snippets/
-        </code>
-      </div>
-    </div>
+        <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
+          <span>💡 {t.snippets.viewAllSnippets}</span>
+          <code className="text-[11px] bg-secondary px-2 py-0.5 rounded border border-border font-mono text-foreground">
+            snippets/
+          </code>
+        </div>
+      </CardContent>
+    </Card>
   );
 };

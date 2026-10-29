@@ -11,6 +11,8 @@ import type { DebugEvent, AppStats } from './types';
 import { Terminal, Send, Hash, Code2 } from 'lucide-react';
 import { useAuth, useStatsQuery, queryKeys } from './hooks/api';
 import { useQueryClient } from '@tanstack/react-query';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 const defaultStats: AppStats = {
   active_sockets: 0,
@@ -20,10 +22,12 @@ const defaultStats: AppStats = {
   timestamp: Date.now(),
 };
 
+type TabValue = 'console' | 'simulator' | 'channels' | 'snippets';
+
 export const App: React.FC = () => {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'console' | 'simulator' | 'channels' | 'snippets'>('console');
+  const [activeTab, setActiveTab] = useState<TabValue>('console');
   const [isSecretModalOpen, setIsSecretModalOpen] = useState(false);
 
   // TanStack Query domain hooks
@@ -153,102 +157,91 @@ export const App: React.FC = () => {
           isHibernating={stats.active_sockets === 0}
         />
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-border mb-6 space-x-2 sm:space-x-4 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('console')}
-            className={`flex items-center space-x-2 py-3 px-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'console'
-                ? 'border-sky-400 text-sky-400'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-zinc-700'
-            }`}
-          >
-            <Terminal className="w-4 h-4" />
-            <span>{t.tabs.debugConsole}</span>
-            {events.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                {events.length}
-              </span>
-            )}
-          </button>
+        {/* Tab Navigation with shadcn Tabs */}
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => setActiveTab(val as TabValue)}
+          className="space-y-6"
+        >
+          <TabsList variant="line" className="border-b border-border w-full justify-start pb-0 h-auto gap-2 sm:gap-4 overflow-x-auto">
+            <TabsTrigger
+              value="console"
+              className="py-3 px-3 text-xs sm:text-sm font-medium data-active:text-sky-400 group-data-[variant=line]/tabs-list:data-active:after:bg-sky-400"
+            >
+              <Terminal className="w-4 h-4 mr-1.5" />
+              <span>{t.tabs.debugConsole}</span>
+              {events.length > 0 && (
+                <Badge variant="outline" className="ml-1.5 px-1.5 py-0 text-[10px] bg-sky-500/10 text-sky-400 border-sky-500/20">
+                  {events.length}
+                </Badge>
+              )}
+            </TabsTrigger>
 
-          <button
-            onClick={() => setActiveTab('simulator')}
-            className={`flex items-center space-x-2 py-3 px-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'simulator'
-                ? 'border-sky-400 text-sky-400'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-zinc-700'
-            }`}
-          >
-            <Send className="w-4 h-4" />
-            <span>{t.tabs.eventSimulator}</span>
-          </button>
+            <TabsTrigger
+              value="simulator"
+              className="py-3 px-3 text-xs sm:text-sm font-medium data-active:text-sky-400 group-data-[variant=line]/tabs-list:data-active:after:bg-sky-400"
+            >
+              <Send className="w-4 h-4 mr-1.5" />
+              <span>{t.tabs.eventSimulator}</span>
+            </TabsTrigger>
 
-          <button
-            onClick={() => setActiveTab('channels')}
-            className={`flex items-center space-x-2 py-3 px-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'channels'
-                ? 'border-sky-400 text-sky-400'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-zinc-700'
-            }`}
-          >
-            <Hash className="w-4 h-4" />
-            <span>{t.tabs.channelsExplorer}</span>
-            {stats.channels_count > 0 && (
-              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
-                {stats.channels_count}
-              </span>
-            )}
-          </button>
+            <TabsTrigger
+              value="channels"
+              className="py-3 px-3 text-xs sm:text-sm font-medium data-active:text-sky-400 group-data-[variant=line]/tabs-list:data-active:after:bg-sky-400"
+            >
+              <Hash className="w-4 h-4 mr-1.5" />
+              <span>{t.tabs.channelsExplorer}</span>
+              {stats.channels_count > 0 && (
+                <Badge variant="outline" className="ml-1.5 px-1.5 py-0 text-[10px] bg-zinc-800 text-zinc-300 border-zinc-700">
+                  {stats.channels_count}
+                </Badge>
+              )}
+            </TabsTrigger>
 
-          <button
-            onClick={() => setActiveTab('snippets')}
-            className={`flex items-center space-x-2 py-3 px-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'snippets'
-                ? 'border-sky-400 text-sky-400'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-zinc-700'
-            }`}
-          >
-            <Code2 className="w-4 h-4" />
-            <span>{t.tabs.snippets}</span>
-          </button>
-        </div>
+            <TabsTrigger
+              value="snippets"
+              className="py-3 px-3 text-xs sm:text-sm font-medium data-active:text-sky-400 group-data-[variant=line]/tabs-list:data-active:after:bg-sky-400"
+            >
+              <Code2 className="w-4 h-4 mr-1.5" />
+              <span>{t.tabs.snippets}</span>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Tab Content */}
-        {activeTab === 'console' && (
-          <DebugConsole
-            events={events}
-            isPaused={isPaused}
-            onTogglePause={() => setIsPaused(!isPaused)}
-            onClear={() => setEvents([])}
-          />
-        )}
+          <TabsContent value="console" className="mt-0">
+            <DebugConsole
+              events={events}
+              isPaused={isPaused}
+              onTogglePause={() => setIsPaused(!isPaused)}
+              onClear={() => setEvents([])}
+            />
+          </TabsContent>
 
-        {activeTab === 'simulator' && (
-          <EventSimulator
-            isAuthenticated={isAuthenticated}
-            initialChannel={simulatorChannel}
-            onOpenSecretModal={() => setIsSecretModalOpen(true)}
-            onEventDispatched={() => statsQuery.refetch()}
-          />
-        )}
+          <TabsContent value="simulator" className="mt-0">
+            <EventSimulator
+              isAuthenticated={isAuthenticated}
+              initialChannel={simulatorChannel}
+              onOpenSecretModal={() => setIsSecretModalOpen(true)}
+              onEventDispatched={() => statsQuery.refetch()}
+            />
+          </TabsContent>
 
-        {activeTab === 'channels' && (
-          <ChannelExplorer
-            channels={stats.channels || {}}
-            onRefresh={() => statsQuery.refetch()}
-            isRefreshing={statsQuery.isFetching}
-            onSelectChannelForTrigger={handleSelectChannelForTrigger}
-          />
-        )}
+          <TabsContent value="channels" className="mt-0">
+            <ChannelExplorer
+              channels={stats.channels || {}}
+              onRefresh={() => statsQuery.refetch()}
+              isRefreshing={statsQuery.isFetching}
+              onSelectChannelForTrigger={handleSelectChannelForTrigger}
+            />
+          </TabsContent>
 
-        {activeTab === 'snippets' && (
-          <SnippetGenerator
-            appKey={appKey}
-            appId={appId}
-            host={window.location.host}
-          />
-        )}
+          <TabsContent value="snippets" className="mt-0">
+            <SnippetGenerator
+              appKey={appKey}
+              appId={appId}
+              host={window.location.host}
+            />
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Secret Key Modal */}

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Radio, Key, Globe, ExternalLink, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useI18n } from '../i18n/context';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface NavbarProps {
   wsStatus: 'connected' | 'connecting' | 'disconnected';
@@ -14,7 +16,6 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   wsStatus,
   isAuthenticated,
-  appId,
   appKey,
   onOpenSecretModal,
   onReconnectWs,
@@ -33,9 +34,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center space-x-2">
               <span className="font-bold tracking-tight text-foreground text-lg">Edgekit</span>
               <span className="font-semibold text-sky-400 text-lg">Events</span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+              <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider bg-sky-500/10 text-sky-400 border-sky-500/20 px-1.5 py-0.5">
                 DO Realtime
-              </span>
+              </Badge>
             </div>
             <p className="text-xs text-muted-foreground hidden sm:block">
               {t.navbar.brandSubtitle}
@@ -46,10 +47,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Status & Actions */}
         <div className="flex items-center space-x-2 sm:space-x-3">
           {/* WebSocket Live Status */}
-          <div
+          <Badge
+            variant="outline"
             onClick={wsStatus === 'disconnected' ? onReconnectWs : undefined}
             title={wsStatus === 'disconnected' ? t.navbar.reconnect : undefined}
-            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+            className={`flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium transition-colors ${
               wsStatus === 'connected'
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                 : wsStatus === 'connecting'
@@ -76,24 +78,26 @@ export const Navbar: React.FC<NavbarProps> = ({
             {wsStatus === 'disconnected' && (
               <RefreshCw className="w-3 h-3 ml-1" />
             )}
-          </div>
+          </Badge>
 
           {/* App Key Badge if loaded */}
           {appKey && (
-            <div className="hidden md:flex items-center space-x-1 px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-xs text-muted-foreground">
+            <Badge variant="outline" className="hidden md:flex items-center space-x-1 bg-secondary/80 border-border text-xs text-muted-foreground font-normal">
               <span className="text-zinc-500">Key:</span>
               <code className="text-foreground font-mono">{appKey}</code>
-            </div>
+            </Badge>
           )}
 
           {/* App Secret / Session Trigger Button */}
-          <button
+          <Button
+            variant={isAuthenticated ? 'outline' : 'secondary'}
+            size="sm"
             onClick={onOpenSecretModal}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
+            className={
               isAuthenticated
-                ? 'bg-sky-500/10 text-sky-400 border-sky-500/30 hover:bg-sky-500/20'
-                : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700'
-            }`}
+                ? 'border-sky-500/30 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20'
+                : ''
+            }
           >
             {isAuthenticated ? (
               <>
@@ -107,28 +111,36 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>{t.navbar.connectSecret}</span>
               </>
             )}
-          </button>
+          </Button>
 
           {/* Language Switcher */}
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setLocale(locale === 'pt-BR' ? 'en' : 'pt-BR')}
             title={t.navbar.languageTooltip}
-            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-md bg-secondary/80 border border-border text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="flex items-center space-x-1 px-2.5 text-xs text-muted-foreground hover:text-foreground"
           >
             <Globe className="w-3.5 h-3.5" />
             <span className="uppercase font-semibold">{locale === 'pt-BR' ? 'PT' : 'EN'}</span>
-          </button>
+          </Button>
 
           {/* Docs / Github Link */}
-          <a
-            href="https://github.com"
-            target="_blank"
-            rel="noreferrer"
-            title={t.navbar.docs}
-            className="hidden sm:flex items-center space-x-1 p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            render={
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noreferrer"
+                title={t.navbar.docs}
+              />
+            }
+            className="hidden sm:inline-flex text-muted-foreground hover:text-foreground"
           >
             <ExternalLink className="w-4 h-4" />
-          </a>
+          </Button>
         </div>
       </div>
     </header>

@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { Send, Sparkles, CheckCircle2, AlertTriangle, Key, Code } from 'lucide-react';
 import { useI18n } from '../i18n/context';
 import { useTriggerEvent } from '../hooks/api';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface EventSimulatorProps {
   isAuthenticated: boolean;
@@ -122,146 +128,162 @@ export const EventSimulator: React.FC<EventSimulatorProps> = ({
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-      <div className="mb-6">
-        <h3 className="text-base font-semibold text-foreground">
+    <Card className="shadow-sm">
+      <CardHeader className="pb-6">
+        <CardTitle className="text-base font-semibold text-foreground">
           {t.simulator.title}
-        </h3>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        </CardTitle>
+        <CardDescription className="text-xs text-muted-foreground mt-0.5">
           {t.simulator.subtitle}
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
 
-      {/* Warning if not authenticated with HttpOnly cookie */}
-      {!isAuthenticated && (
-        <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
-          <div className="flex items-center space-x-3 text-amber-400 text-xs">
-            <AlertTriangle className="w-5 h-5 shrink-0" />
-            <span>{t.simulator.needSecretWarning}</span>
-          </div>
-          <button
-            onClick={onOpenSecretModal}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-semibold text-xs hover:bg-amber-400 transition-colors shrink-0"
-          >
-            <Key className="w-3.5 h-3.5" />
-            <span>Conectar Agora</span>
-          </button>
-        </div>
-      )}
-
-      {/* Preset template selector */}
-      <div className="flex flex-wrap items-center gap-2 mb-5">
-        <span className="text-xs font-medium text-muted-foreground flex items-center space-x-1">
-          <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-          <span>{t.simulator.templatePreset}</span>
-        </span>
-        <button
-          type="button"
-          onClick={() => handleSelectPreset('order')}
-          className="px-2.5 py-1 rounded-md text-xs font-medium bg-secondary hover:bg-zinc-800 text-foreground border border-border transition-colors"
-        >
-          {t.simulator.presetOrder}
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSelectPreset('chat')}
-          className="px-2.5 py-1 rounded-md text-xs font-medium bg-secondary hover:bg-zinc-800 text-foreground border border-border transition-colors"
-        >
-          {t.simulator.presetChat}
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSelectPreset('alert')}
-          className="px-2.5 py-1 rounded-md text-xs font-medium bg-secondary hover:bg-zinc-800 text-foreground border border-border transition-colors"
-        >
-          {t.simulator.presetAlert}
-        </button>
-      </div>
-
-      {/* Form */}
-      <form onSubmit={handleTrigger} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-foreground mb-1.5">
-              {t.simulator.channelLabel}
-            </label>
-            <input
-              type="text"
-              value={channel}
-              onChange={(e) => setChannel(e.target.value)}
-              placeholder={t.simulator.channelPlaceholder}
-              className="w-full bg-secondary border border-border rounded-lg px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground font-mono focus:outline-none focus:ring-1 focus:ring-sky-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-foreground mb-1.5">
-              {t.simulator.eventLabel}
-            </label>
-            <input
-              type="text"
-              value={event}
-              onChange={(e) => setEvent(e.target.value)}
-              placeholder={t.simulator.eventPlaceholder}
-              className="w-full bg-secondary border border-border rounded-lg px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground font-mono focus:outline-none focus:ring-1 focus:ring-sky-500"
-              required
-            />
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-medium text-foreground">
-              {t.simulator.payloadLabel}
-            </label>
-            <button
-              type="button"
-              onClick={handleFormatJson}
-              className="text-[11px] text-sky-400 hover:underline flex items-center space-x-1"
+      <CardContent className="space-y-6">
+        {/* Warning if not authenticated with HttpOnly cookie */}
+        {!isAuthenticated && (
+          <Alert className="bg-amber-500/10 border-amber-500/30 text-amber-400 flex items-center justify-between p-4">
+            <div className="flex items-center space-x-3 text-xs">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <AlertDescription className="text-amber-300 font-medium">
+                {t.simulator.needSecretWarning}
+              </AlertDescription>
+            </div>
+            <Button
+              size="sm"
+              onClick={onOpenSecretModal}
+              className="bg-amber-500 text-slate-950 font-semibold hover:bg-amber-400 shrink-0"
             >
-              <Code className="w-3 h-3" />
-              <span>{t.simulator.formatJson}</span>
-            </button>
-          </div>
-          <textarea
-            value={payloadText}
-            onChange={(e) => setPayloadText(e.target.value)}
-            rows={8}
-            className="w-full bg-zinc-950 border border-border rounded-lg p-3 text-xs text-emerald-400 font-mono focus:outline-none focus:ring-1 focus:ring-sky-500 resize-y"
-            required
-          />
-        </div>
-
-        {/* Status message */}
-        {status && (
-          <div
-            className={`p-3 rounded-lg border text-xs flex items-center space-x-2 ${
-              status.type === 'success'
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-            }`}
-          >
-            {status.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-            ) : (
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-            )}
-            <span>{status.message}</span>
-          </div>
+              <Key className="w-3.5 h-3.5 mr-1.5" />
+              <span>Conectar Agora</span>
+            </Button>
+          </Alert>
         )}
 
-        <div className="flex justify-end pt-2">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center space-x-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold rounded-lg text-xs transition-colors shadow-sm shadow-sky-500/20"
+        {/* Preset template selector */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground flex items-center space-x-1 mr-1">
+            <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+            <span>{t.simulator.templatePreset}</span>
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            onClick={() => handleSelectPreset('order')}
           >
-            <Send className="w-4 h-4" />
-            <span>{loading ? t.simulator.triggering : t.simulator.triggerButton}</span>
-          </button>
+            {t.simulator.presetOrder}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            onClick={() => handleSelectPreset('chat')}
+          >
+            {t.simulator.presetChat}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            onClick={() => handleSelectPreset('alert')}
+          >
+            {t.simulator.presetAlert}
+          </Button>
         </div>
-      </form>
-    </div>
+
+        {/* Form */}
+        <form onSubmit={handleTrigger} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="sim-channel" className="text-xs font-medium text-foreground">
+                {t.simulator.channelLabel}
+              </Label>
+              <Input
+                id="sim-channel"
+                type="text"
+                value={channel}
+                onChange={(e) => setChannel(e.target.value)}
+                placeholder={t.simulator.channelPlaceholder}
+                className="font-mono text-xs"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="sim-event" className="text-xs font-medium text-foreground">
+                {t.simulator.eventLabel}
+              </Label>
+              <Input
+                id="sim-event"
+                type="text"
+                value={event}
+                onChange={(e) => setEvent(e.target.value)}
+                placeholder={t.simulator.eventPlaceholder}
+                className="font-mono text-xs"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="sim-payload" className="text-xs font-medium text-foreground">
+                {t.simulator.payloadLabel}
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                onClick={handleFormatJson}
+                className="text-[11px] text-sky-400 hover:text-sky-300"
+              >
+                <Code className="w-3 h-3 mr-1" />
+                <span>{t.simulator.formatJson}</span>
+              </Button>
+            </div>
+            <Textarea
+              id="sim-payload"
+              value={payloadText}
+              onChange={(e) => setPayloadText(e.target.value)}
+              rows={8}
+              className="bg-zinc-950 font-mono text-xs text-emerald-400 resize-y"
+              required
+            />
+          </div>
+
+          {/* Status message */}
+          {status && (
+            <Alert
+              variant={status.type === 'error' ? 'destructive' : 'default'}
+              className={`p-3 text-xs flex items-center space-x-2 ${
+                status.type === 'success'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                  : ''
+              }`}
+            >
+              {status.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+              )}
+              <AlertDescription className="font-medium text-inherit">
+                {status.message}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex justify-end pt-2">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              <span>{loading ? t.simulator.triggering : t.simulator.triggerButton}</span>
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };

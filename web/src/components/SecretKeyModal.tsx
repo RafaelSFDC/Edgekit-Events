@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
-import { ShieldAlert, CheckCircle2, X, Eye, EyeOff, LogOut, Lock } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, Eye, EyeOff, LogOut, Lock } from 'lucide-react';
 import { useI18n } from '../i18n/context';
 import { useLoginMutation, useLogoutMutation } from '../hooks/api';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SecretKeyModalProps {
   isOpen: boolean;
@@ -26,8 +37,6 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
 
   const loginMutation = useLoginMutation();
   const logoutMutation = useLogoutMutation();
-
-  if (!isOpen) return null;
 
   const loading = loginMutation.isPending || logoutMutation.isPending;
 
@@ -66,46 +75,38 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-card border border-border w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Header */}
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
-            <Lock className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-foreground">
-              {t.modal.title}
-            </h3>
-            <div className="flex items-center space-x-1.5 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <p className="text-[11px] font-semibold text-emerald-400">
-                Sessão Segura com Cookie HttpOnly
-              </p>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md p-6">
+        <DialogHeader className="gap-1">
+          <div className="flex items-center space-x-3 mb-1">
+            <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-base font-semibold text-foreground">
+                {t.modal.title}
+              </DialogTitle>
+              <div className="flex items-center space-x-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <p className="text-[11px] font-semibold text-emerald-400">
+                  Sessão Segura com Cookie HttpOnly
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+          <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+            {t.modal.description}
+          </DialogDescription>
+        </DialogHeader>
 
-        <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-          {t.modal.description}
-        </p>
-
-        {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-foreground mb-1.5">
+        <form onSubmit={handleLogin} className="space-y-4 mt-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="secret-input" className="text-xs font-medium text-foreground">
               {t.modal.inputLabel}
-            </label>
+            </Label>
             <div className="relative">
-              <input
+              <Input
+                id="secret-input"
                 type={showSecret ? 'text' : 'password'}
                 value={secretInput}
                 onChange={(e) => {
@@ -113,16 +114,18 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
                   setError(null);
                 }}
                 placeholder={t.modal.inputPlaceholder}
-                className="w-full bg-secondary border border-border rounded-lg px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-sky-500 pr-10 font-mono"
+                className="pr-10 font-mono text-sm"
                 required
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-xs"
                 onClick={() => setShowSecret(!showSecret)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              </Button>
             </div>
             <p className="text-[11px] text-zinc-400 mt-2 bg-secondary/50 p-2.5 rounded-lg border border-border/80 flex items-start space-x-2">
               <span className="text-sky-400 font-bold shrink-0">🛡️</span>
@@ -132,54 +135,62 @@ export const SecretKeyModal: React.FC<SecretKeyModalProps> = ({
 
           {/* Feedback Alerts */}
           {error && (
-            <div className="flex items-start space-x-2 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+            <Alert variant="destructive" className="flex items-start space-x-2 p-3 text-xs">
               <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>{error}</span>
-            </div>
+              <AlertDescription className="font-medium text-inherit">
+                {error}
+              </AlertDescription>
+            </Alert>
           )}
 
           {success && (
-            <div className="flex items-center space-x-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
+            <Alert className="flex items-center space-x-2 p-3 bg-emerald-500/10 border-emerald-500/30 text-emerald-400 text-xs">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>{t.modal.success}</span>
-            </div>
+              <AlertDescription className="font-medium text-inherit">
+                {t.modal.success}
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-2">
             {isAuthenticated ? (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={handleLogout}
                 disabled={loading}
-                className="flex items-center space-x-1.5 px-3 py-2 text-xs font-medium text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors disabled:opacity-50"
+                className="text-xs text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4 mr-1.5" />
                 <span>{t.modal.disconnect}</span>
-              </button>
+              </Button>
             ) : (
               <div />
             )}
 
             <div className="flex items-center space-x-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={onClose}
-                className="px-3.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg transition-colors"
               >
                 {t.common.cancel}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                size="sm"
                 disabled={loading || !secretInput.trim()}
-                className="px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold rounded-lg text-xs transition-colors shadow-sm shadow-sky-500/20"
+                className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold"
               >
                 {loading ? t.modal.verifying : t.modal.verifyButton}
-              </button>
+              </Button>
             </div>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
