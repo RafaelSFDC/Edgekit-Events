@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Copy, Check, FolderCode } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { useI18n } from '../i18n/context';
 import { copyToClipboard } from '../lib/utils';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 
 interface SnippetGeneratorProps {
   host?: string;
@@ -211,98 +209,73 @@ Console.WriteLine(result);`,
   };
 
   return (
-    <Card className="shadow-xs">
-      <Tabs
-        value={activeTab}
-        onValueChange={(val) => setActiveTab(val as SnippetTab)}
-      >
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6">
-          <div>
-            <CardTitle className="text-base font-semibold text-foreground">
-              {t.snippets.title}
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              {t.snippets.subtitle}
-            </CardDescription>
-          </div>
+    <Tabs
+      value={activeTab}
+      onValueChange={(val) => setActiveTab(val as SnippetTab)}
+      className="w-full space-y-4"
+    >
+      <div className="flex items-center overflow-x-auto pb-1">
+        <TabsList className="bg-muted p-1 h-auto flex-wrap">
+          <TabsTrigger value="js" className="text-xs px-2.5 py-1">
+            {t.snippets.tabJavascript}
+          </TabsTrigger>
+          <TabsTrigger value="laravel" className="text-xs px-2.5 py-1">
+            {t.snippets.tabLaravel}
+          </TabsTrigger>
+          <TabsTrigger value="php" className="text-xs px-2.5 py-1">
+            {t.snippets.tabPhp}
+          </TabsTrigger>
+          <TabsTrigger value="node" className="text-xs px-2.5 py-1">
+            {t.snippets.tabNode}
+          </TabsTrigger>
+          <TabsTrigger value="python" className="text-xs px-2.5 py-1">
+            {t.snippets.tabPython}
+          </TabsTrigger>
+          <TabsTrigger value="go" className="text-xs px-2.5 py-1">
+            {t.snippets.tabGo}
+          </TabsTrigger>
+          <TabsTrigger value="dotnet" className="text-xs px-2.5 py-1">
+            {t.snippets.tabDotnet}
+          </TabsTrigger>
+          <TabsTrigger value="curl" className="text-xs px-2.5 py-1">
+            {t.snippets.tabCurl}
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
-          {/* Tab navigation */}
-          <TabsList className="bg-muted p-1">
-            <TabsTrigger value="js" className="text-xs px-2.5 py-1">
-              {t.snippets.tabJavascript}
-            </TabsTrigger>
-            <TabsTrigger value="laravel" className="text-xs px-2.5 py-1">
-              {t.snippets.tabLaravel}
-            </TabsTrigger>
-            <TabsTrigger value="php" className="text-xs px-2.5 py-1">
-              {t.snippets.tabPhp}
-            </TabsTrigger>
-            <TabsTrigger value="node" className="text-xs px-2.5 py-1">
-              {t.snippets.tabNode}
-            </TabsTrigger>
-            <TabsTrigger value="python" className="text-xs px-2.5 py-1">
-              {t.snippets.tabPython}
-            </TabsTrigger>
-            <TabsTrigger value="go" className="text-xs px-2.5 py-1">
-              {t.snippets.tabGo}
-            </TabsTrigger>
-            <TabsTrigger value="dotnet" className="text-xs px-2.5 py-1">
-              {t.snippets.tabDotnet}
-            </TabsTrigger>
-            <TabsTrigger value="curl" className="text-xs px-2.5 py-1">
-              {t.snippets.tabCurl}
-            </TabsTrigger>
-          </TabsList>
-        </CardHeader>
+      {/* Code Display Area using TabsContent */}
+      <div className="relative">
+        <div className="absolute top-3 right-3 z-10">
+          <Button
+            variant="secondary"
+            size="xs"
+            onClick={handleCopy}
+            className="gap-1 shadow-xs"
+          >
+            {copied ? (
+              <>
+                <Check className="size-3.5 text-emerald-500" />
+                <span className="text-emerald-500">{t.common.copied}</span>
+              </>
+            ) : (
+              <>
+                <Copy className="size-3.5" />
+                <span>{t.common.copy}</span>
+              </>
+            )}
+          </Button>
+        </div>
 
-        <CardContent>
-          {/* Code Display Area using TabsContent */}
-          <div className="relative">
-            <div className="absolute top-3 right-3 z-10">
-              <Button
-                variant="secondary"
-                size="xs"
-                onClick={handleCopy}
-                className="gap-1 shadow-xs"
-              >
-                {copied ? (
-                  <>
-                    <Check className="size-3.5 text-emerald-500" />
-                    <span className="text-emerald-500">{t.common.copied}</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="size-3.5" />
-                    <span>{t.common.copy}</span>
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {Object.entries(snippets).map(([lang, code]) => (
-              <TabsContent key={lang} value={lang} className="mt-0">
-                <ScrollArea className="rounded-lg border border-border bg-muted/60 max-h-96">
-                  <pre className="p-4 text-xs font-mono text-foreground leading-relaxed">
-                    <code>{code}</code>
-                  </pre>
-                </ScrollArea>
-              </TabsContent>
-            ))}
-          </div>
-
-          <Separator className="my-4" />
-
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <FolderCode className="size-3.5 text-primary" />
-              <span>{t.snippets.viewAllSnippets}</span>
-            </span>
-            <code className="text-xs bg-secondary px-2 py-0.5 rounded border border-border font-mono text-foreground">
-              snippets/
-            </code>
-          </div>
-        </CardContent>
-      </Tabs>
-    </Card>
+        {Object.entries(snippets).map(([lang, code]) => (
+          <TabsContent key={lang} value={lang} className="mt-0">
+            <ScrollArea className="rounded-lg border border-border bg-muted/60 max-h-96">
+              <pre className="p-4 text-xs font-mono text-foreground leading-relaxed">
+                <code>{code}</code>
+              </pre>
+            </ScrollArea>
+          </TabsContent>
+        ))}
+      </div>
+    </Tabs>
   );
 };

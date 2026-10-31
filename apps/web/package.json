@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "npx tsx test/verify-query.ts && npx tsx test/verify-realtime-query.ts && npx tsx test/verify-auth-routing.ts && npx tsx test/verify-page-header.ts && npx tsx test/verify-console.ts && npx tsx test/verify-create-channel-dialog.ts"
+    "test": "npx tsx test/verify-query.ts && npx tsx test/verify-realtime-query.ts && npx tsx test/verify-auth-routing.ts && npx tsx test/verify-page-header.ts && npx tsx test/verify-console.ts && npx tsx test/verify-create-channel-dialog.ts && npx tsx test/verify-simulator-dialog.ts && npx tsx test/verify-snippet-generator.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
