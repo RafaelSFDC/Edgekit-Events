@@ -6,7 +6,6 @@ import {
   ArrowDown,
   Code2,
   Copy,
-  Check,
   Send,
   Radio,
   Users,
@@ -305,7 +304,7 @@ export const consoleColumns: ColumnDef<DebugEvent>[] = [
       };
 
       return (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-1.5">
           {hasPayload ? (
             <>
               <Button
@@ -322,7 +321,10 @@ export const consoleColumns: ColumnDef<DebugEvent>[] = [
                 type="button"
                 variant="outline"
                 size="xs"
-                onClick={() => meta?.onInspectEvent?.(item)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  meta?.onInspectEvent?.(item);
+                }}
                 className="h-7 gap-1 px-2 text-xs text-primary font-medium hover:bg-primary/10 border-primary/20"
               >
                 <Code2 className="size-3" />
@@ -334,7 +336,10 @@ export const consoleColumns: ColumnDef<DebugEvent>[] = [
               type="button"
               variant="ghost"
               size="xs"
-              onClick={() => meta?.onInspectEvent?.(item)}
+              onClick={(e) => {
+                e.stopPropagation();
+                meta?.onInspectEvent?.(item);
+              }}
               className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
               title="Ver detalhes"
             >

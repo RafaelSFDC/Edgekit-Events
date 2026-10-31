@@ -177,6 +177,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       href="https://github.com"
                       target="_blank"
                       rel="noreferrer"
+                      aria-label={t.navbar.docs}
                     />
                   }
                   className="hidden sm:inline-flex text-muted-foreground hover:text-foreground"

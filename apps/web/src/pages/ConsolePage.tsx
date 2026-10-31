@@ -29,7 +29,11 @@ import { toast } from 'sonner';
 
 export const ConsolePage: React.FC = () => {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<'events' | 'channels'>('events');
+  const routerState = useRouterState();
+  const searchTab = (routerState.location.search as any)?.tab;
+  const [activeTab, setActiveTab] = useState<'events' | 'channels'>(() =>
+    searchTab === 'channels' ? 'channels' : 'events'
+  );
   const [inspectEvent, setInspectEvent] = useState<DebugEvent | null>(null);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
@@ -37,15 +41,8 @@ export const ConsolePage: React.FC = () => {
   const [simulatorDefaultEvent, setSimulatorDefaultEvent] = useState<string | undefined>(undefined);
 
   // Parâmetros de busca da rota (ex: se redirecionado com tab=channels ou channel=xyz)
-  const routerState = useRouterState();
   useEffect(() => {
     const search = routerState.location.search as any;
-    if (search?.tab === 'channels') {
-      setActiveTab('channels');
-    } else if (search?.tab === 'events') {
-      setActiveTab('events');
-    }
-
     if (search?.channel) {
       setSimulatorChannel(search.channel);
       setIsSimulatorOpen(true);
@@ -211,7 +208,7 @@ export const ConsolePage: React.FC = () => {
       <CreateChannelDialog
         open={isCreateChannelOpen}
         onOpenChange={setIsCreateChannelOpen}
-        onChannelCreated={(ch) => {
+        onChannelCreated={(_ch) => {
           setActiveTab('channels');
         }}
       />

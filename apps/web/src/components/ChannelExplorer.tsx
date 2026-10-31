@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -37,7 +37,7 @@ import {
   Sliders,
   ShieldCheck,
 } from 'lucide-react';
-import type { ChannelStat, ChannelCategory } from '../types';
+import type { ChannelStat } from '../types';
 import { useI18n } from '../i18n/context';
 import { useChannelsQuery, useDeleteChannel } from '../hooks/api/use-channels';
 import { useStatsQuery } from '../hooks/api/use-stats';
@@ -110,7 +110,6 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
   const { data: statsData, isFetching: isStatsFetching, refetch: refetchStats } = useStatsQuery();
   const deleteChannelMutation = useDeleteChannel();
 
-  const channelsData = propChannels ?? channelsQueryData ?? statsData?.channels ?? {};
   const isRefreshing = propIsRefreshing ?? (isChannelsFetching || isStatsFetching);
 
   // Estados de Tabela TanStack
@@ -124,7 +123,8 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
 
   // Lista normalizada de canais
   const channelList: ChannelStat[] = useMemo(() => {
-    return Object.entries(channelsData).map(([name, data]: [string, any]) => ({
+    const rawData = propChannels ?? channelsQueryData ?? statsData?.channels ?? {};
+    return Object.entries(rawData).map(([name, data]: [string, any]) => ({
       name,
       user_count: data.user_count ?? 0,
       isPresence: data.category === 'presence' || name.startsWith('presence-'),
@@ -140,7 +140,7 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
       createdAt: data.createdAt,
       isRegistered: data.isRegistered ?? false,
     }));
-  }, [channelsData]);
+  }, [propChannels, channelsQueryData, statsData?.channels]);
 
   const handleCopyChannelName = (e: React.MouseEvent, channelName: string) => {
     e.stopPropagation();
@@ -150,18 +150,21 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
     setTimeout(() => setCopiedChannel(null), 2000);
   };
 
-  const handleDeleteChannel = (channelName: string) => {
-    if (confirm(t.channels.deleteConfirm(channelName))) {
-      deleteChannelMutation.mutate(channelName, {
-        onSuccess: () => {
-          toast.success(t.channels.deletedSuccess(channelName));
-        },
-        onError: () => {
-          toast.error(t.channels.deleteError);
-        },
-      });
-    }
-  };
+  const handleDeleteChannel = useCallback(
+    (channelName: string) => {
+      if (confirm(t.channels.deleteConfirm(channelName))) {
+        deleteChannelMutation.mutate(channelName, {
+          onSuccess: () => {
+            toast.success(t.channels.deletedSuccess(channelName));
+          },
+          onError: () => {
+            toast.error(t.channels.deleteError);
+          },
+        });
+      }
+    },
+    [deleteChannelMutation, t]
+  );
 
   const handleRefreshClick = () => {
     if (propOnRefresh) {
@@ -524,7 +527,7 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({
         },
       },
     ],
-    [copiedChannel, onSelectChannelForTrigger, t]
+    [copiedChannel, onSelectChannelForTrigger, handleDeleteChannel, t]
   );
 
   const categoryFilter =

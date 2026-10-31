@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Plus,
   Lock,
@@ -32,7 +32,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -398,18 +397,12 @@ export const CreateChannelForm: React.FC<CreateChannelFormProps> = ({
                   const IconComponent = arch.icon;
                   const isSelected = categoryField.state.value === arch.category;
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={arch.category}
-                      role="radio"
-                      aria-checked={isSelected}
-                      tabIndex={0}
+                      aria-pressed={isSelected}
+                      aria-label={arch.title}
                       onClick={() => handleSelectArchetype(arch.category)}
-                      onKeyDown={(e) => {
-                        if (e.key === ' ' || e.key === 'Enter') {
-                          e.preventDefault();
-                          handleSelectArchetype(arch.category);
-                        }
-                      }}
                       className={cn(
                         'flex flex-col justify-between p-3.5 rounded-lg border text-left transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         isSelected
@@ -448,7 +441,7 @@ export const CreateChannelForm: React.FC<CreateChannelFormProps> = ({
                           {arch.visibility}
                         </Badge>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>

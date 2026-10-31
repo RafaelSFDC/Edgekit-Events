@@ -142,7 +142,6 @@ export const LoginPage: React.FC = () => {
                     }}
                     placeholder={t.login.passkeyPlaceholder}
                     className="pr-10 font-mono text-sm"
-                    autoFocus
                     required
                     disabled={isLoggingIn}
                   />

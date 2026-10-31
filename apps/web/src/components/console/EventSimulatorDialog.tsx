@@ -26,7 +26,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -283,18 +282,12 @@ export const EventSimulatorForm: React.FC<EventSimulatorFormProps> = ({
               const isSelected = activePreset === preset.id;
 
               return (
-                <div
+                <button
+                  type="button"
                   key={preset.id}
-                  role="radio"
-                  aria-checked={isSelected}
-                  tabIndex={0}
+                  aria-pressed={isSelected}
+                  aria-label={preset.title}
                   onClick={() => handleSelectPreset(preset.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === ' ' || e.key === 'Enter') {
-                      e.preventDefault();
-                      handleSelectPreset(preset.id);
-                    }
-                  }}
                   className={cn(
                     'flex flex-col justify-between p-3 rounded-lg border text-left transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     isSelected
@@ -327,7 +320,7 @@ export const EventSimulatorForm: React.FC<EventSimulatorFormProps> = ({
                       {preset.event}
                     </Badge>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

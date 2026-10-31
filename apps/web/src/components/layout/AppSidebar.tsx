@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useI18n } from '../../i18n/context';
-import { useStatsQuery } from '../../hooks/api/use-stats';
 import { useEventsQuery } from '../../hooks/api/use-events';
 import {
   Sidebar,
@@ -28,14 +27,12 @@ export const AppSidebar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Queries para badges ao vivo na sidebar
-  const { data: stats } = useStatsQuery();
   const { data: events = [] } = useEventsQuery();
 
   // Rota ativa para marcar o item como ativo
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
 
-  const channelsCount = stats?.channels_count ?? 0;
   const isCollapsed = state === 'collapsed';
 
   // Filtragem rápida da sidebar

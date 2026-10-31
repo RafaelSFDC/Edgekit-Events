@@ -2,7 +2,6 @@ import assert from 'node:assert';
 import { queryKeys } from '../src/hooks/api/query-keys';
 import { getQueryClient } from '../src/lib/query-client';
 import { debugSocketManager } from '../src/services/debug-socket';
-import { useStatsQuery } from '../src/hooks/api/use-stats';
 import type { DebugEvent } from '../src/types';
 
 // Mock global WebSocket for Node test environment

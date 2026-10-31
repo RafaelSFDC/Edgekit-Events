@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import type { ChannelRecord, ChannelCategory, ChannelVisibility } from "../src/types/pusher";
+import type { ChannelRecord } from "../src/types/pusher";
 
 // Simulação de validação de IP
 function isIpAllowed(clientIp: string, allowedIps: string[]): boolean {

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import type { Env } from "../types/env";
 import type { SimpleTriggerPayload, CreateChannelPayload } from "../types/pusher";
-import { findApp, getApps, verifySimpleBearerAuth } from "../services/auth";
+import { getApps, verifySimpleBearerAuth } from "../services/auth";
 import { AUTH_COOKIE_NAME } from "./debug";
 
 export const simpleApiRoute = new Hono<{ Bindings: Env }>();

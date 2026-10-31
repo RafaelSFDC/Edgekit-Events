@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { md5, hmacSha256Hex, constantTimeEquals, generateSocketId } from "../src/services/crypto";
+import { md5, hmacSha256Hex, generateSocketId } from "../src/services/crypto";
 import { verifyPusherHttpSignature, verifyChannelAuth, verifySimpleBearerAuth } from "../src/services/auth";
 import { healthRoute } from "../src/routes/health";
 import { debugRoute } from "../src/routes/debug";
