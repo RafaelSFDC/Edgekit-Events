@@ -11,6 +11,7 @@ import hashlib
 import json
 import urllib.request
 import urllib.error
+import urllib.parse
 from typing import Optional, List, Dict, Any, Union
 
 
@@ -147,6 +148,44 @@ class EdgeKitEvents:
             result["channel_data"] = channel_data_str
 
         return result
+
+    def trigger_batch(self, batch: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Broadcasts multiple events in a single batch request (POST /api/v1/batch).
+        Each item in batch should have: {"channel": str, "event": str, "data": Any, "socket_id"?: str}
+        """
+        url = f"{self.base_url}/api/v1/batch"
+        body_bytes = json.dumps({"batch": batch}).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.app_secret}",
+            "X-App-Secret": self.app_secret,
+            "User-Agent": "EdgekitEvents-Python/1.0",
+        }
+        req = urllib.request.Request(url, data=body_bytes, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=10) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except Exception as e:
+            raise EdgeKitEventsError(f"Batch trigger failed: {str(e)}") from e
+
+    def get_history(self, channel: str) -> List[Dict[str, Any]]:
+        """
+        Retrieves message history for a channel (if retention is enabled).
+        """
+        url = f"{self.base_url}/api/v1/channels/{urllib.parse.quote(channel)}/history"
+        headers = {
+            "Authorization": f"Bearer {self.app_secret}",
+            "X-App-Secret": self.app_secret,
+            "User-Agent": "EdgekitEvents-Python/1.0",
+        }
+        req = urllib.request.Request(url, headers=headers, method="GET")
+        try:
+            with urllib.request.urlopen(req, timeout=10) as response:
+                res = json.loads(response.read().decode("utf-8"))
+                return res.get("messages", [])
+        except Exception as e:
+            raise EdgeKitEventsError(f"Failed to fetch history for {channel}: {str(e)}") from e
 
     def get_channels(self) -> Dict[str, Any]:
         """

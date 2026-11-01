@@ -4,6 +4,7 @@ export type EventType =
   | 'client_disconnected'
   | 'channel_subscribed'
   | 'channel_unsubscribed'
+  | 'sse_connected'
   | 'connected';
 
 export interface DebugEvent {

@@ -20,6 +20,9 @@ O **Edgekit Events** é uma alternativa open-source, serverless e self-hosted ao
 - [6. Java (Spring Boot / Java 17+)](#6-java-spring-boot--java-17)
 - [7. Rust (Axum / Actix-web)](#7-rust-axum--actix-web)
 - [8. cURL & Terminal CLI](#8-curl--terminal-cli)
+- [9. Integração com Protocolo Ably REST & SDK](#9-integração-com-protocolo-ably-rest--sdk)
+- [10. Server-Sent Events (SSE) & Frontend Zero-NPM](#10-server-sent-events-sse--frontend-zero-npm)
+- [11. WordPress & Hospedagem Compartilhada (Fire-and-Forget)](#11-wordpress--hospedagem-compartilhada-fire-and-forget)
 - [🌐 Conexão no Frontend (pusher-js)](#-conexão-no-frontend-pusher-js)
 - [🏢 Configuração Multi-Tenant (APPS_CONFIG)](#-configuração-multi-tenant-apps_config)
 - [🛡️ Melhores Práticas de Segurança](#️-melhores-práticas-de-segurança)
@@ -28,11 +31,17 @@ O **Edgekit Events** é uma alternativa open-source, serverless e self-hosted ao
 
 ## 📡 Visão Geral da API & Protocolo
 
-O Edgekit Events disponibiliza rotas simplificadas para microserviços e rotas oficiais compatíveis com o ecossistema Pusher:
+O Edgekit Events disponibiliza rotas simplificadas para microserviços, compatibilidade com o protocolo Ably, e rotas oficiais do ecossistema Pusher:
 
 | Endpoint | Método | Finalidade | Autenticação |
 | :--- | :---: | :--- | :--- |
 | `/api/v1/trigger` | `POST` | Disparo simplificado de eventos REST | `Authorization: Bearer <secret>` ou `X-App-Secret` |
+| `/api/v1/batch` | `POST` | Disparo em lote de múltiplos eventos e canais | `Authorization: Bearer <secret>` ou `X-App-Secret` |
+| `/api/v1/channels/:name/history` | `GET` | Consulta histórico de mensagens retidas | `Authorization: Bearer <secret>` ou `X-App-Secret` |
+| `/events/stream` | `GET` | Stream nativo Server-Sent Events (SSE) | `?key=<app_key>` + `?channel=...` |
+| `/channels/:channel/messages` | `POST` | Publicação de mensagens no padrão Ably REST | `Authorization: Basic base64(key:secret)` ou `X-Ably-Key` |
+| `/channels/:channel/messages` | `GET` | Histórico de mensagens no padrão Ably REST | `Authorization: Basic base64(key:secret)` ou `X-Ably-Key` |
+| `/keys/:key/requestToken` | `POST` | Emissão de token compatível com Ably | `Authorization: Basic base64(key:secret)` ou `X-Ably-Key` |
 | `/apps/:app_id/events` | `POST` | Rota oficial Pusher REST API | Query params HMAC Pusher (`auth_signature`) |
 | `/apps/:app_id/channels` | `GET` | Consulta canais ativos e estatísticas | `Authorization: Bearer <secret>` ou HMAC Pusher |
 | `/app/:app_key` | `GET` | Conexão e Upgrade WebSocket | Conexão pública de navegadores (`protocol=7`) |
@@ -407,6 +416,84 @@ curl -X POST "https://realtime.seusite.com/api/v1/trigger" \
       "cliente": "Maria Silva"
     }
   }'
+```
+
+---
+
+## 9. Integração com Protocolo Ably REST & SDK
+
+O Edgekit Events conta com emulação de rotas REST compatíveis com Ably, permitindo disparar e consumir histórico via chamadas diretas ou ferramentas já existentes sem alterar sua lógica.
+
+### Publicar Mensagens (Formato Ably):
+```bash
+curl -X POST "https://realtime.seudominio.com/channels/pedidos/messages" \
+  -H "Content-Type: application/json" \
+  -H "X-Ably-Key: sua-chave-publica:sua-chave-secreta" \
+  -d '{
+    "name": "pedido.criado",
+    "data": { "id": 1054, "total": 99.90 }
+  }'
+```
+
+### Consultar Histórico do Canal (Formato Ably):
+```bash
+curl "https://realtime.seudominio.com/channels/pedidos/messages" \
+  -H "X-Ably-Key: sua-chave-publica:sua-chave-secreta"
+```
+
+---
+
+## 10. Server-Sent Events (SSE) & Frontend Zero-NPM
+
+Para aplicações leves, PWAs, visualizações webview em apps móveis ou quando você não quiser adicionar pacotes externos ao seu projeto, utilize o stream nativo SSE (`/events/stream`) e o helper [`snippets/events-client.ts`](../snippets/events-client.ts).
+
+### Exemplo com Hook React:
+```tsx
+import { createEdgekitClient, useEdgekitEvent } from "@/lib/events-client";
+
+export const client = createEdgekitClient({
+  host: "realtime.seudominio.com",
+  appKey: "sua-chave-publica",
+  transport: "sse", // Server-Sent Events nativo com reconexão automática
+});
+
+export function NotificacoesAoVivo() {
+  useEdgekitEvent(client, "pedidos", "pedido.criado", (pedido) => {
+    console.log("Novo pedido ao vivo:", pedido);
+  });
+
+  return <div>Conectado ao stream de eventos via SSE.</div>;
+}
+```
+
+---
+
+## 11. WordPress & Hospedagem Compartilhada (Fire-and-Forget)
+
+Em hospedagens compartilhadas (cPanel) ou hooks do WordPress (como `woocommerce_new_order`), requisições HTTP síncronas podem travar ou lentificar o checkout do cliente. O Edgekit Events resolve isso com disparo assíncrono não-bloqueante (timeout de 150ms):
+
+```php
+$workerUrl = 'https://realtime.seudominio.com/api/v1/trigger';
+$appSecret = 'sua-chave-secreta';
+
+$ch = curl_init($workerUrl);
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => json_encode([
+        'channel' => 'pedidos',
+        'event'   => 'pedido.concluido',
+        'data'    => ['pedido_id' => $pedido_id]
+    ]),
+    CURLOPT_TIMEOUT_MS     => 150, // Fire-and-forget não-bloqueante!
+    CURLOPT_NOSIGNAL       => 1,
+    CURLOPT_HTTPHEADER     => [
+        'Content-Type: application/json',
+        'X-App-Secret: ' . $appSecret
+    ]
+]);
+curl_exec($ch);
+curl_close($ch);
 ```
 
 ---

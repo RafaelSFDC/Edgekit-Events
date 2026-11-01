@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cloudflare Realtime - Teste Pusher Clone</title>
+  <title>Edgekit Events - Universal Realtime Client</title>
   <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
   <style>
     * { box-sizing: border-box; }
@@ -36,7 +36,7 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
       margin-bottom: 16px;
     }
@@ -47,7 +47,7 @@
       color: #cbd5e1;
       margin-bottom: 6px;
     }
-    input {
+    input, select {
       width: 100%;
       padding: 10px 12px;
       background: #0f172a;
@@ -56,7 +56,7 @@
       color: #f8fafc;
       font-size: 0.9rem;
     }
-    input:focus {
+    input:focus, select:focus {
       outline: none;
       border-color: #38bdf8;
     }
@@ -103,8 +103,8 @@
 </head>
 <body>
   <div class="container">
-    <h1>📡 Cloudflare Realtime</h1>
-    <p class="subtitle">Teste em tempo real com o SDK oficial <code>pusher-js</code> conectado ao Cloudflare Worker.</p>
+    <h1>📡 Edgekit Events</h1>
+    <p class="subtitle">Cliente universal em tempo real: teste com <code>pusher-js</code> (WebSocket) ou nativo com <code>EventSource</code> (Server-Sent Events).</p>
 
     <!-- Conexão -->
     <div class="card">
@@ -115,7 +115,14 @@
 
       <div class="grid">
         <div>
-          <label>Host do Worker (wsHost/httpHost):</label>
+          <label>Transporte:</label>
+          <select id="transportSelect">
+            <option value="ws">WebSocket (Pusher v7)</option>
+            <option value="sse">Server-Sent Events (SSE)</option>
+          </select>
+        </div>
+        <div>
+          <label>Host do Worker:</label>
           <input type="text" id="hostInput" value="localhost:8787" />
         </div>
         <div>
@@ -128,7 +135,7 @@
         </div>
         <div>
           <label>TLS / HTTPS:</label>
-          <select id="tlsSelect" style="width: 100%; padding: 10px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #f8fafc;">
+          <select id="tlsSelect">
             <option value="false">Não (Localhost HTTP/WS)</option>
             <option value="true">Sim (Produção HTTPS/WSS)</option>
           </select>
@@ -149,21 +156,21 @@
           <input type="text" id="channelInput" value="pedidos" />
         </div>
         <div>
-          <label>Evento:</label>
+          <label>Nome do Evento:</label>
           <input type="text" id="eventInput" value="novo-pedido" />
         </div>
       </div>
 
-      <div style="display: flex; gap: 10px; margin-bottom: 16px;">
-        <button class="btn btn-secondary" onclick="subscribeChannel()">Assinar Canal</button>
-        <button class="btn" onclick="triggerTestEvent()">Disparar Evento via REST API</button>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-secondary" onclick="subscribeChannel()">Re-assinar Canal</button>
+        <button class="btn" onclick="triggerTestEvent()">Disparar Evento de Teste (REST)</button>
       </div>
     </div>
 
-    <!-- Logs -->
+    <!-- Log de Eventos -->
     <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h3 style="margin: 0;">3. Registro de Eventos Recebidos (Logs)</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0;">3. Registro de Eventos Recebidos (Live Log)</h3>
         <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="clearLogs()">Limpar</button>
       </div>
       <div id="logBox" class="log-box"></div>
@@ -172,14 +179,15 @@
 
   <script>
     let pusher = null;
+    let eventSource = null;
     let currentChannel = null;
 
-    function log(msg, highlight = false) {
+    function log(message, highlight = false) {
       const box = document.getElementById("logBox");
       const time = new Date().toLocaleTimeString();
       const div = document.createElement("div");
       div.className = "log-entry";
-      div.innerHTML = `<span class="log-time">[${time}]</span> ${highlight ? `<span class="log-highlight">${msg}</span>` : msg}`;
+      div.innerHTML = `<span class="log-time">[${time}]</span> <span class="${highlight ? 'log-highlight' : ''}">${message}</span>`;
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
     }
@@ -189,67 +197,117 @@
     }
 
     function toggleConnect() {
+      if (pusher || eventSource) {
+        disconnect();
+      } else {
+        connect();
+      }
+    }
+
+    function disconnect() {
       if (pusher) {
         pusher.disconnect();
         pusher = null;
-        document.getElementById("connectBtn").innerText = "Conectar";
-        document.getElementById("connectionBadge").innerText = "Desconectado";
-        document.getElementById("connectionBadge").className = "badge badge-disconnected";
-        log("Desconectado do servidor.");
-        return;
       }
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+      currentChannel = null;
+      document.getElementById("connectBtn").innerText = "Conectar";
+      document.getElementById("connectionBadge").innerText = "Desconectado";
+      document.getElementById("connectionBadge").className = "badge badge-disconnected";
+      log("Conexão encerrada.");
+    }
 
+    function connect() {
+      const transport = document.getElementById("transportSelect").value;
       const host = document.getElementById("hostInput").value.trim();
       const key = document.getElementById("keyInput").value.trim();
       const port = parseInt(document.getElementById("portInput").value, 10);
       const isTLS = document.getElementById("tlsSelect").value === "true";
+      const channelName = document.getElementById("channelInput").value.trim();
+      const eventName = document.getElementById("eventInput").value.trim();
 
-      log(`Iniciando conexão Pusher para ${host} (App Key: ${key})...`);
+      if (transport === "sse") {
+        const proto = isTLS ? "https://" : "http://";
+        const url = `${proto}${host}/events/stream?channel=${encodeURIComponent(channelName)}&key=${encodeURIComponent(key)}`;
+        log(`Iniciando stream SSE para ${url}...`);
 
-      pusher = new Pusher(key, {
-        wsHost: host,
-        httpHost: host,
-        wsPort: port,
-        wssPort: port,
-        forceTLS: isTLS,
-        disableStats: true,
-        enabledTransports: ["ws", "wss"]
-      });
+        eventSource = new EventSource(url);
 
-      pusher.connection.bind("connected", () => {
-        document.getElementById("connectBtn").innerText = "Desconectar";
-        document.getElementById("connectionBadge").innerText = "Conectado";
-        document.getElementById("connectionBadge").className = "badge badge-connected";
-        log(`Conectado com sucesso! Socket ID: ${pusher.connection.socket_id}`, true);
-        subscribeChannel();
-      });
+        eventSource.onopen = () => {
+          document.getElementById("connectBtn").innerText = "Desconectar";
+          document.getElementById("connectionBadge").innerText = "Conectado (SSE)";
+          document.getElementById("connectionBadge").className = "badge badge-connected";
+          log(`Stream SSE conectado com sucesso ao canal "${channelName}"!`, true);
+        };
 
-      pusher.connection.bind("disconnected", () => {
-        document.getElementById("connectBtn").innerText = "Conectar";
-        document.getElementById("connectionBadge").innerText = "Desconectado";
-        document.getElementById("connectionBadge").className = "badge badge-disconnected";
-        log("Conexão encerrada.");
-      });
+        eventSource.addEventListener(eventName, (e) => {
+          log(`⚡ [SSE RECEBIDO] Evento: "${eventName}" | Dados: ${e.data}`, true);
+        });
 
-      pusher.connection.bind("error", (err) => {
-        log(`Erro de conexão: ${JSON.stringify(err)}`);
-      });
+        eventSource.onmessage = (e) => {
+          log(`⚡ [SSE MENSAGEM] ${e.data}`, true);
+        };
+
+        eventSource.onerror = (err) => {
+          log(`Erro na conexão SSE: stream interrompido.`);
+          disconnect();
+        };
+
+      } else {
+        log(`Iniciando conexão Pusher WebSocket para ${host} (App Key: ${key})...`);
+
+        pusher = new Pusher(key, {
+          wsHost: host,
+          httpHost: host,
+          wsPort: port,
+          wssPort: port,
+          forceTLS: isTLS,
+          disableStats: true,
+          enabledTransports: ["ws", "wss"]
+        });
+
+        pusher.connection.bind("connected", () => {
+          document.getElementById("connectBtn").innerText = "Desconectar";
+          document.getElementById("connectionBadge").innerText = "Conectado (WS)";
+          document.getElementById("connectionBadge").className = "badge badge-connected";
+          log(`Conectado com sucesso via WebSocket! Socket ID: ${pusher.connection.socket_id}`, true);
+          subscribeChannel();
+        });
+
+        pusher.connection.bind("disconnected", () => {
+          disconnect();
+        });
+
+        pusher.connection.bind("error", (err) => {
+          log(`Erro de conexão WebSocket: ${JSON.stringify(err)}`);
+        });
+      }
     }
 
     function subscribeChannel() {
+      const channelName = document.getElementById("channelInput").value.trim();
+      const eventName = document.getElementById("eventInput").value.trim();
+
+      if (eventSource) {
+        log(`No modo SSE, re-conectando ao canal "${channelName}"...`);
+        disconnect();
+        connect();
+        return;
+      }
+
       if (!pusher) {
         alert("Conecte-se primeiro!");
         return;
       }
 
-      const channelName = document.getElementById("channelInput").value.trim();
-      const eventName = document.getElementById("eventInput").value.trim();
-
       if (currentChannel) {
         pusher.unsubscribe(currentChannel.name);
       }
 
-      log(`Assinando canal "${channelName}"...`);
+      log(`Assinando canal "${channelName}" via WebSocket...`);
       currentChannel = pusher.subscribe(channelName);
 
       currentChannel.bind("pusher:subscription_succeeded", () => {
@@ -257,7 +315,7 @@
       });
 
       currentChannel.bind(eventName, (data) => {
-        log(`⚡ [EVENTO RECEBIDO] Canal: "${channelName}" | Evento: "${eventName}" | Dados: ${JSON.stringify(data)}`, true);
+        log(`⚡ [EVENTO WS RECEBIDO] Canal: "${channelName}" | Evento: "${eventName}" | Dados: ${JSON.stringify(data)}`, true);
       });
     }
 
@@ -283,7 +341,7 @@
             channel,
             event,
             data: {
-              mensagem: "Olá do Cloudflare Realtime!",
+              mensagem: "Olá do Edgekit Events!",
               pedido_id: Math.floor(Math.random() * 90000 + 10000),
               timestamp: new Date().toISOString()
             }

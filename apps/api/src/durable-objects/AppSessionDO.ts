@@ -9,6 +9,7 @@ import type {
   ChannelCategory,
   ChannelVisibility,
   CreateChannelPayload,
+  MessageRecord,
 } from "../types/pusher";
 import { generateSocketId } from "../services/crypto";
 import { verifyChannelAuth } from "../services/auth";
@@ -28,11 +29,20 @@ function isIpAllowed(clientIp: string, allowedIps: string[]): boolean {
   });
 }
 
+interface SseSubscriber {
+  id: string;
+  channels: Set<string>;
+  writer: WritableStreamDefaultWriter<Uint8Array>;
+  encoder: TextEncoder;
+}
+
 export class AppSessionDO extends DurableObject<Env> {
   private appConfig: AppConfig | null = null;
   // In-memory cache of subscribers per channel while DO is awake
   private channelMap: Map<string, Set<WebSocket>> = new Map();
   private isMapHydrated = false;
+  // Active SSE stream connections
+  private sseSubscribers: Map<string, SseSubscriber> = new Map();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -63,6 +73,42 @@ export class AppSessionDO extends DurableObject<Env> {
   async listChannelConfigs(): Promise<ChannelRecord[]> {
     const map = await this.ctx.storage.list<ChannelRecord>({ prefix: "chan:" });
     return Array.from(map.values());
+  }
+
+  /**
+   * Helper methods for Channel Message History (Ably rewind & SSE replay compatibility)
+   */
+  async getChannelHistory(channel: string): Promise<MessageRecord[]> {
+    return (await this.ctx.storage.get<MessageRecord[]>(`hist:${channel}`)) || [];
+  }
+
+  async appendChannelHistory(
+    channel: string,
+    event: string,
+    data: any
+  ): Promise<MessageRecord | null> {
+    const config = await this.getChannelConfig(channel);
+    const hasHistory =
+      (config?.historyLimit !== undefined && config.historyLimit > 0) ||
+      channel.startsWith("cache-") ||
+      channel.startsWith("history-");
+
+    if (!hasHistory) return null;
+
+    const limit = config?.historyLimit || 50;
+    const history = await this.getChannelHistory(channel);
+    const record: MessageRecord = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      channel,
+      name: event,
+      data,
+      timestamp: Date.now(),
+    };
+
+    history.push(record);
+    const trimmed = history.length > limit ? history.slice(-limit) : history;
+    await this.ctx.storage.put(`hist:${channel}`, trimmed);
+    return record;
   }
 
   private async sendWebhookNotification(
@@ -321,6 +367,131 @@ export class AppSessionDO extends DurableObject<Env> {
       }
 
       return Response.json({ success: true, delivered_to: recipientsCount });
+    }
+
+    // Route 2B: Internal batch broadcast route
+    if (url.pathname === "/broadcast-batch" && request.method === "POST") {
+      const payload = (await request.json()) as {
+        batch: Array<{
+          channel: string;
+          event?: string;
+          name?: string;
+          data: any;
+          socket_id?: string;
+        }>;
+      };
+
+      this.ensureChannelMapHydrated();
+
+      let totalDelivered = 0;
+      for (const item of payload.batch || []) {
+        const evt = item.event || item.name || "message";
+        if (item.channel && evt) {
+          totalDelivered += this.broadcastToChannel(
+            item.channel,
+            evt,
+            item.data,
+            item.socket_id
+          );
+        }
+      }
+
+      return Response.json({ success: true, delivered_to: totalDelivered });
+    }
+
+    // Route 2C: Universal Server-Sent Events (SSE) Stream
+    if (url.pathname === "/events/stream" && request.method === "GET") {
+      const channelParam =
+        url.searchParams.get("channel") ||
+        url.searchParams.get("channels") ||
+        "";
+      const requestedChannels = channelParam
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+
+      if (requestedChannels.length === 0) {
+        return new Response("Missing 'channel' query parameter", { status: 400 });
+      }
+
+      const lastEventId =
+        url.searchParams.get("last_event_id") ||
+        request.headers.get("Last-Event-ID");
+
+      const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+      const writer = writable.getWriter();
+      const encoder = new TextEncoder();
+      const sseId = `sse-${generateSocketId()}`;
+
+      const subscriber: SseSubscriber = {
+        id: sseId,
+        channels: new Set(requestedChannels),
+        writer,
+        encoder,
+      };
+
+      this.sseSubscribers.set(sseId, subscriber);
+
+      // Send initial SSE handshake
+      writer
+        .write(
+          encoder.encode(
+            `: connected to edgekit events sse stream\nid: ${Date.now()}\nevent: edgekit:connected\ndata: ${JSON.stringify(
+              { channels: requestedChannels, socket_id: sseId }
+            )}\n\n`
+          )
+        )
+        .catch(() => {});
+
+      // If last_event_id was provided, replay missed messages from channel history
+      if (lastEventId) {
+        (async () => {
+          for (const ch of requestedChannels) {
+            const history = await this.getChannelHistory(ch);
+            const missed = history.filter(
+              (m) => m.id > lastEventId || m.timestamp > Number(lastEventId)
+            );
+            for (const msg of missed) {
+              const formattedData =
+                typeof msg.data === "string" ? msg.data : JSON.stringify(msg.data);
+              await writer
+                .write(
+                  encoder.encode(
+                    `id: ${msg.id}\nevent: ${msg.name}\ndata: ${formattedData}\n\n`
+                  )
+                )
+                .catch(() => {});
+            }
+          }
+        })().catch(() => {});
+      }
+
+      this.notifyDebugListeners({
+        type: "sse_connected",
+        socket_id: sseId,
+        channels: requestedChannels,
+        timestamp: Date.now(),
+      });
+
+      return new Response(readable, {
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          "Connection": "keep-alive",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+
+    // Route 2D: Channel History retrieval (Ably rewind & history query compatibility)
+    if (url.pathname === "/history" && request.method === "GET") {
+      const channel = url.searchParams.get("channel");
+      if (!channel) {
+        return Response.json({ error: "Missing 'channel' query parameter" }, { status: 400 });
+      }
+
+      const messages = await this.getChannelHistory(channel);
+      return Response.json({ channel, messages });
     }
 
     // Route 3: Channel query (registered in SQLite + in-memory live sockets)
@@ -625,21 +796,13 @@ export class AppSessionDO extends DurableObject<Env> {
     data: any,
     excludeSocketId?: string
   ): number {
-    const sockets = this.channelMap.get(channel);
-    if (!sockets || sockets.size === 0) {
-      this.notifyDebugListeners({
-        type: "event_triggered",
-        channel,
-        event,
-        data,
-        socket_id: excludeSocketId,
-        delivered_to: 0,
-        timestamp: Date.now(),
-      });
-      return 0;
-    }
+    // Record to circular history buffer if enabled for this channel
+    this.appendChannelHistory(channel, event, data).catch((err) => {
+      console.error("[DO] Error saving channel history:", err);
+    });
 
-    // Standard Pusher protocol expects data to be stringified JSON or string
+    const sockets = this.channelMap.get(channel);
+    // Standard protocol expects data to be stringified JSON or string
     const formattedData = typeof data === "string" ? data : JSON.stringify(data);
     const messagePayload = JSON.stringify({
       channel,
@@ -648,19 +811,43 @@ export class AppSessionDO extends DurableObject<Env> {
     });
 
     let sent = 0;
-    for (const ws of sockets) {
-      if (excludeSocketId) {
-        const attachment = ws.deserializeAttachment() as SocketAttachment | null;
-        if (attachment?.socketId === excludeSocketId) {
-          continue;
+
+    // 1. Deliver to connected WebSockets
+    if (sockets && sockets.size > 0) {
+      for (const ws of sockets) {
+        if (excludeSocketId) {
+          const attachment = ws.deserializeAttachment() as SocketAttachment | null;
+          if (attachment?.socketId === excludeSocketId) {
+            continue;
+          }
+        }
+
+        try {
+          ws.send(messagePayload);
+          sent++;
+        } catch (err) {
+          console.error("Failed to send message to socket:", err);
         }
       }
+    }
 
-      try {
-        ws.send(messagePayload);
-        sent++;
-      } catch (err) {
-        console.error("Failed to send message to socket:", err);
+    // 2. Deliver to connected SSE subscribers
+    if (this.sseSubscribers.size > 0) {
+      const ssePayload = `id: ${Date.now()}\nevent: ${event}\ndata: ${formattedData}\n\n`;
+      for (const [subId, sub] of this.sseSubscribers.entries()) {
+        if (sub.channels.has(channel)) {
+          if (excludeSocketId && sub.id === excludeSocketId) {
+            continue;
+          }
+          try {
+            sub.writer.write(sub.encoder.encode(ssePayload)).catch(() => {
+              this.sseSubscribers.delete(subId);
+            });
+            sent++;
+          } catch {
+            this.sseSubscribers.delete(subId);
+          }
+        }
       }
     }
 

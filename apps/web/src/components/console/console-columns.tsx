@@ -142,6 +142,16 @@ export const consoleColumns: ColumnDef<DebugEvent>[] = [
                 UNSUBSCRIBE
               </Badge>
             );
+          case 'sse_connected':
+            return (
+              <Badge
+                variant="outline"
+                className="text-[11px] font-mono border-purple-500/30 text-purple-600 dark:text-purple-400 bg-purple-500/10 gap-1"
+              >
+                <Radio className="size-2.5" />
+                SSE STREAM
+              </Badge>
+            );
           default:
             return (
               <Badge variant="secondary" className="text-[11px] font-mono uppercase">

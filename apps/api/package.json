@@ -11,7 +11,7 @@
     "deploy": "wrangler deploy",
     "cf-typegen": "wrangler types",
     "typecheck": "tsc --noEmit",
-    "test": "npx tsx test/verify.ts && npx tsx test/verify-channels.ts"
+    "test": "npx tsx test/verify.ts && npx tsx test/verify-channels.ts && npx tsx test/verify-protocols.ts"
   },
   "dependencies": {
     "hono": "^4.7.2"

@@ -207,7 +207,9 @@ export const en: Translations = {
   snippets: {
     title: 'Ready-to-use Code Snippets',
     subtitle: 'Copy code with your application keys configured to get started in seconds',
-    tabJavascript: 'JavaScript / React',
+    tabClient: 'React / Browser (Zero-NPM)',
+    tabJavascript: 'Pusher-js (Vanilla)',
+    tabAbly: 'Ably REST / SDK',
     tabLaravel: 'Laravel Echo',
     tabPhp: 'Pure PHP (cURL)',
     tabNode: 'Node.js',
@@ -216,7 +218,7 @@ export const en: Translations = {
     tabDotnet: 'C# (.NET)',
     tabCurl: 'cURL Terminal',
     copiedSnippet: 'Snippet copied to clipboard!',
-    viewAllSnippets: 'View all 7 zero-dependency clients in snippets/ folder',
+    viewAllSnippets: 'View all zero-dependency clients in snippets/ folder',
   },
   modal: {
     title: 'Authenticate with Passkey',

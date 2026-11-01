@@ -8,287 +8,245 @@
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/RafaelSFDC/Edgekit-Events)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Zero Idle Cost](https://img.shields.io/badge/Idle%20Cost-Zero%20(Hibernation)-emerald)](#)
-[![Pusher Protocol](https://img.shields.io/badge/Protocol-Pusher%20v7-F38020)](#)
+[![Multi Protocol](https://img.shields.io/badge/Protocols-Pusher%20v7%20%7C%20Ably%20%7C%20SSE-F38020)](#)
 
-An **open-source, serverless, and self-hosted alternative to Pusher, Soketi, and Ably**, built with **Hono** on **Cloudflare Workers** with **Durable Objects** and native **WebSocket Hibernation**.
+An **open-source, serverless, and self-hosted drop-in replacement for Pusher, Ably, and Soketi**, built with **Hono** on **Cloudflare Workers** with **Durable Objects** and native **WebSocket Hibernation**.
 
-Designed with a dual purpose:
-1. **Full-Featured Visual Dashboard**: Inspect live events in real-time with Live Debug Console, broadcast test events with Event Simulator, track active channels/presence, and copy ready-to-use snippets.
-2. **High-Performance External Realtime Microservice / API**: Trigger WebSocket events effortlessly from any backend (**Next.js, Node, PHP/Laravel, Python/FastAPI, Go, C#/.NET, Java/Spring, or Rust**), featuring zero-dependency copy-paste client snippets.
+> 💡 **The Edgekit Manifesto**: We are not a SaaS. We are not a hosted service. There are no surprise monthly invoices, connection markups, or idle fees. Everything belongs **100% solely and exclusively to you**, running on your own Cloudflare account (generous Free tier friendly, zero DevOps).
+
+---
+
+## 📊 Market Comparison
+
+| Feature / Criteria | **Edgekit Events** | **Pusher Channels** | **Ably Realtime** | **Soketi (Self-Hosted)** |
+| :--- | :--- | :--- | :--- | :--- |
+| **Hosting Model** | **100% Yours (Cloudflare)** | Proprietary SaaS | Proprietary SaaS | Self-hosted (VPS / Docker) |
+| **Idle Cost** | **Zero (DO Hibernation)** | Paid per concurrent socket | Paid per message/connection | Continuous VPS/EC2 cost |
+| **Server / DevOps Overhead** | **Zero (Pure Serverless)** | Zero (SaaS) | Zero (SaaS) | High (Redis, Node, SSL, OS) |
+| **Pusher v7 Protocol** | ✅ Native (`pusher-js`, Echo) | ✅ Native | ⚠️ Via adapters only | ✅ Native |
+| **Ably REST / Message API** | ✅ Built-in Adapter | ❌ No | ✅ Native | ❌ No |
+| **Native Server-Sent Events (SSE)** | ✅ Yes (`/events/stream`) | ❌ No | ⚠️ Limited SSE | ❌ No |
+| **Message History & Replay** | ✅ Optional (DO SQLite Buffer) | ❌ Cache channels only | ✅ Yes | ❌ No |
+| **Visual Admin Dashboard** | ✅ Integrated on Edge (`/`) | ✅ Cloud dashboard | ✅ Cloud dashboard | ⚠️ Basic / Separate |
+| **Zero-NPM Client Snippets** | ✅ Yes (shadcn style) | ❌ Requires SDK | ❌ Requires SDK | ❌ Requires SDK |
 
 ---
 
 ## 🚀 Highlights
 
-- ⚡ **1-Click Deploy**: Official Cloudflare Workers Deploy button or interactive setup via `pnpm run setup`.
-- 💰 **Zero Idle Costs**: Cloudflare Durable Objects WebSocket Hibernation keeps thousands of connected browsers in sleep mode at zero CPU invocation cost.
-- 📡 **Pusher Protocol v7 Compatible**: Drop-in replacement for Pusher and Soketi — connect directly from frontend apps using official `pusher-js` or Laravel Echo without proprietary SDKs.
-- 🔐 **HMAC-SHA256 Private & Presence Channels**: Secure access to user-specific streams (`private-*`) and collaborative rooms (`presence-*`) with real-time member join/leave notifications.
-- 🚀 **Zero-Dependency Simplified REST API**: Broadcast events via `POST /api/v1/trigger` using simple Bearer token or `X-App-Secret` headers without complex signature calculations.
-- 🏢 **Multi-Tenant Architecture**: Host multiple distinct applications or clients within the same Worker instance using `APPS_CONFIG` with isolated Durable Object sessions.
-- 🖥️ **Integrated Web Dashboard**: Built with **React 19 + Tailwind CSS**, served directly from the edge on `/` with Live Stream Console, Event Simulator, and Snippets.
-- 📦 **shadcn-Style Client Snippets (Zero NPM Dependencies)**: Copy [`snippets/events.ts`](snippets/events.ts) into your project (`lib/events.ts`) and use TypeScript with native Fetch without installing third-party libraries.
-
----
-
-## 🖥️ Integrated Web Dashboard
-
-The project includes a modern, edge-rendered management dashboard built with **React 19, Tailwind CSS, and Lucide Icons**, served automatically via Cloudflare Workers **Static Assets**:
-
-- 📡 **Live Debug Console**: Continuous real-time stream of broadcasts, connections, and subscriptions with color-coded badges, payload inspection, and one-click JSON copy.
-- 🚀 **Event Simulator & Trigger**: Fire test events into any channel directly from the browser with pre-built presets (E-commerce Order, Chat Message, System Notification).
-- 👥 **Channels & Presence Explorer**: Monitor active public, private, and presence channels with live online listener counters.
-- 📋 **Multi-Language Snippet Generator**: Copy configured code in JavaScript, Laravel Echo, PHP cURL, Node.js, Python, and terminal cURL.
-- 🌐 **Full Internationalization (i18n)**: Seamless live toggle between **English (EN)** and **Português (pt-BR)**.
-- 🔐 **Secure HttpOnly Cookie Authentication**: Manage your console session safely without exposing secret keys to client-side localStorage scripts.
+- ⚡ **1-Click Deploy**: Cloudflare Workers Deploy button or interactive setup via `pnpm run setup`.
+- 💰 **Zero Idle Costs**: Durable Objects WebSocket Hibernation keeps thousands of connected clients asleep at zero CPU invocation cost.
+- 📡 **Universal Multi-Protocol**:
+  - **Pusher v7**: Drop-in compatible with official `pusher-js` and Laravel Echo.
+  - **Ably REST Adapter**: Drop-in publish and message history endpoints (`POST /channels/:id/messages`, `GET /channels/:id/messages`).
+  - **Universal SSE**: Native Server-Sent Events stream (`GET /events/stream?channel=...`) with automatic reconnection and `last_event_id` replay.
+- 🔐 **Delegated Auth Security**: Works seamlessly with any backend (Next.js, Laravel, WordPress, FastAPI, Go). Edgekit Events remains completely agnostic and doesn't store user credentials.
+- 📦 **Zero-Dependency shadcn-Style Snippets**:
+  - Frontend: [`snippets/events-client.ts`](snippets/events-client.ts) (Native WebSocket / SSE + React hook `useEdgekitEvent`).
+  - Backend: [`snippets/events.ts`](snippets/events.ts) (TypeScript / Next.js) and [`snippets/Events.php`](snippets/Events.php) (PHP / WordPress fire-and-forget).
+- 🏢 **Multi-Tenancy**: Configured statically via environment secrets by default (zero database required), with optional Cloudflare D1 for dynamic app management.
+- 🖥️ **All-in-One Packaging**: Deploys both the realtime API engine and the modern React 19 management dashboard on the same Cloudflare Worker.
 
 ---
 
 ## 📐 Architecture Overview
 
 ```
-[Your External Backend / App]
-          │
-          ▼ (POST /api/v1/trigger or POST /apps/:app_id/events)
-[Hono Worker on Cloudflare Edge]
-          │
-          ▼ (Routes to target Durable Object instance)
-[Cloudflare Durable Object (AppSessionDO)]
-          │
-          ▼ (Delivers via WebSocket Hibernation API)
-[Browsers / End Users (pusher-js)]
-          (Zero idle CPU cost while clients stay connected!)
+[Your Backend: PHP / WordPress / Next.js / Python / Go]
+                        │
+                        ▼ (POST /api/v1/trigger, /api/v1/batch, or /apps/:id/events)
+       [Hono Worker on Cloudflare Edge]
+                        │
+                        ▼ (Routes to target Durable Object instance)
+       [Cloudflare Durable Object (AppSessionDO)]
+              ├── In-Memory State & Presence Map
+              ├── SQLite Circular Buffer (Message History & Replay)
+              └── WebSocket Hibernation Manager
+                        │
+         ┌──────────────┴──────────────┐
+         ▼                             ▼
+[Browsers: pusher-js / Echo]   [Browsers / Mobile: SSE Stream]
+  (Zero idle CPU cost!)           (Native EventSource)
 ```
 
 ---
 
-## 🛠️ Prerequisites
+## 🛠️ Quick Start & Local Development
 
-- **Node.js** >= 18
-- **pnpm** (or npm)
-- A **Cloudflare** account (Workers Free tier includes generous allowances and Durable Objects support).
-
----
-
-## ⚡ Installation & Local Development
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/RafaelSFDC/Edgekit-Events.git
-   cd "Edgekit Events"
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   pnpm install
-   ```
-
-3. **Configure local environment variables:**
-   Run the quick setup wizard:
-   ```bash
-   pnpm setup
-   ```
-   Or manually create `.dev.vars`:
-   ```ini
-   DEFAULT_APP_ID=default-app
-   DEFAULT_APP_KEY=default-key
-   DEFAULT_APP_SECRET=my-secret-key-12345
-   ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-   ```
-
-4. **Start local dev servers (Cloudflare Worker + Vite with instant HMR):**
-   ```bash
-   pnpm dev
-   ```
-   - Open `http://localhost:5173` in your browser for the Web Dashboard with instant Vite Hot Module Replacement (HMR).
-   - Worker API & WebSocket backend run on `http://localhost:8787`.
-
-5. **Run automated unit & crypto tests:**
-   ```bash
-   pnpm test
-   ```
-
----
-
-## 🌐 Deploying to Cloudflare
-
-### 1. Authenticate with Cloudflare CLI
+### 1. Clone & Install
 ```bash
-pnpm --filter @edgekit/api wrangler login
+git clone https://github.com/RafaelSFDC/Edgekit-Events.git
+cd "Edgekit Events"
+pnpm install
 ```
 
-### 2. Configure Your Secret App Key
-Define your production `DEFAULT_APP_SECRET` securely in Cloudflare:
+### 2. Configure Local Secrets
+Run the interactive setup:
 ```bash
-pnpm --filter @edgekit/api wrangler secret put DEFAULT_APP_SECRET
+pnpm setup
 ```
-*(Enter your secure secret key when prompted)*
+Or manually create `.dev.vars`:
+```ini
+DEFAULT_APP_ID=default-app
+DEFAULT_APP_KEY=key-default
+DEFAULT_APP_SECRET=secret-default
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+```
 
-### 3. Deploy to Production
+### 3. Start Dev Servers (API + Web Dashboard)
 ```bash
-pnpm deploy
+pnpm dev
 ```
-Your serverless real-time WebSocket backend will be live in seconds! 🚀
+- Web Dashboard with HMR: `http://localhost:5173`
+- Worker API & WebSocket Engine: `http://localhost:8787`
 
----
-
-## 📖 API Reference
-
-### 1. Simplified Trigger Endpoint
-Broadcasts an event to one or multiple channels without Pusher HMAC URL query formatting.
-
-- **Method**: `POST`
-- **Route**: `/api/v1/trigger`
-- **Headers**:
-  - `Authorization: Bearer <DEFAULT_APP_SECRET>` or `X-App-Secret: <DEFAULT_APP_SECRET>`
-  - `Content-Type: application/json`
-- **Body Fields (`application/json`)**:
-  | Field | Type | Required | Description |
-  |---|---|---|---|
-  | `channel` | String | No* | Target channel (e.g. `orders`, `private-user.1`) |
-  | `channels` | Array | No* | Array of multiple channel names |
-  | `event` | String | **Yes** | Event name (e.g. `order-created`) |
-  | `data` | Any | **Yes** | Payload object, array, or string |
-  | `socket_id` | String | No | Socket ID to exclude from broadcast |
-  | `app_id` | String | No | Target App ID (defaults to `DEFAULT_APP_ID`) |
-
-*\* Either `channel` or `channels` must be provided.*
-
-#### Example Success Response (`200 OK`):
-```json
-{
-  "success": true,
-  "delivered_to": 3,
-  "channels": ["orders"],
-  "event": "order-created"
-}
-```
-
----
-
-### 2. Official Pusher REST API Endpoint
-Compatible with official Pusher backend libraries (`pusher-php-server`, `pusher-http-node`, `pusher-http-python`).
-
-- **Method**: `POST`
-- **Route**: `/apps/:app_id/events`
-- **Query Parameters**: Standard Pusher HMAC authentication (`auth_key`, `auth_timestamp`, `auth_signature`, `body_md5`, `auth_version=1.0`)
-
----
-
-### 3. Query Channel Statistics
-Returns active channels and subscriber counts.
-
-- **Method**: `GET`
-- **Route**: `/apps/:app_id/channels`
-- **Headers**: `Authorization: Bearer <DEFAULT_APP_SECRET>` or `X-App-Secret: <DEFAULT_APP_SECRET>`
-
-#### Example Response:
-```json
-{
-  "channels": {
-    "orders": {
-      "user_count": 5
-    },
-    "presence-lobby": {
-      "user_count": 12
-    }
-  }
-}
-```
-
----
-
-### 4. WebSocket Upgrade Route
-Used by client libraries (`pusher-js`).
-
-- **Method**: `GET`
-- **Route**: `/app/:app_key?protocol=7&client=js&version=8.2.0`
-- **Protocol**: WebSocket
-
----
-
-## 📦 Ready-to-Use Snippets by Language (Copy-Paste)
-
-Instead of requiring heavy third-party packages, copy native snippets directly into your projects:
-
-| Language | File | Supported Frameworks & Runtimes |
-| :--- | :--- | :--- |
-| **TypeScript / JS** | [`snippets/events.ts`](snippets/events.ts) | Next.js (App Router / Server Actions), Remix, Astro, Node 18+, Bun |
-| **Python** | [`snippets/events.py`](snippets/events.py) | FastAPI, Django, Flask, Celery |
-| **PHP** | [`snippets/Events.php`](snippets/Events.php) | Laravel, Symfony, WordPress, PHP 8+ native / cPanel |
-| **Go** | [`snippets/events.go`](snippets/events.go) | Gin, Fiber, Chi, Go Standard Library |
-| **C# (.NET)** | [`snippets/EdgeKitEvents.cs`](snippets/EdgeKitEvents.cs) | ASP.NET Core, Blazor, .NET 6/7/8+ native |
-| **Java** | [`snippets/EdgeKitEvents.java`](snippets/EdgeKitEvents.java) | Spring Boot, Quarkus, Micronaut, Java 17+ native |
-| **Rust** | [`snippets/events.rs`](snippets/events.rs) | Axum, Actix-web, Tauri, Tokio |
-| **HTTP / cURL** | [`docs/integrations.md`](docs/integrations.md) | Shell, Postman, Webhooks, Scripts |
-
-> 📖 **Full Integration Guide**: Check [`docs/integrations.md`](docs/integrations.md) for step-by-step tutorials with examples in Next.js, FastAPI, Laravel, ASP.NET Core, Spring Boot, Axum, and Go.
-
----
-
-### Quick Example in TypeScript / Next.js
-
-```typescript
-// lib/events.ts (or copy from snippets/events.ts)
-import { createEventsClient } from '@/lib/events';
-
-const events = createEventsClient({
-  host: process.env.EDGEKIT_EVENTS_HOST!, // "realtime.yourdomain.com"
-  appKey: process.env.EDGEKIT_EVENTS_KEY!,
-  appSecret: process.env.EDGEKIT_EVENTS_SECRET!,
-});
-
-// 1. Broadcast an event to subscribers
-await events.trigger({
-  channel: 'orders',
-  event: 'new-order',
-  data: { orderId: 1042, total: 249.90 },
-});
-
-// 2. Authorize private or presence channel in /api/pusher/auth
-const auth = await events.authorizeChannel(socketId, channel, {
-  user_id: user.id,
-  user_info: { name: user.name },
-});
-```
-
-### Quick Example in cURL
-
-```bash
-curl -X POST "https://realtime.yourdomain.com/api/v1/trigger" \
-  -H "Authorization: Bearer your-secret-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "channel": "orders",
-    "event": "new-order",
-    "data": { "id": 1042, "status": "paid" }
-  }'
-```
-
----
-
-## ⚙️ Environment Variables & Configuration
-
-| Variable | Type | Default | Description |
-|---|---|---|---|
-| `DEFAULT_APP_ID` | String | `"default-app"` | Default application identifier |
-| `DEFAULT_APP_KEY` | String | `"default-key"` | Public application key used by frontend `pusher-js` clients |
-| `DEFAULT_APP_SECRET` | Secret | *Required* | Master secret key for triggering events and validating HMAC signatures |
-| `APPS_CONFIG` | String | `""` | Optional JSON string defining multi-tenant applications |
-| `ALLOWED_ORIGINS` | String | `""` | Comma-separated CORS allowed origins (empty allows all origins) |
-
----
-
-## 🧪 Automated Tests
-
-The repository includes automated test suites covering MD5 hashing, HMAC-SHA256 signatures, socket ID generation, private/presence channel authorizations, and HTTP Bearer validation:
-
+### 4. Run Automated Test Suite
 ```bash
 pnpm test
 ```
 
 ---
 
-## 📄 License
+## 🌐 1-Click Deployment to Cloudflare
 
-This project is open-source licensed under the [MIT License](LICENSE).
+### Deploy via Wrangler CLI
+```bash
+# 1. Login to Cloudflare
+pnpm --filter @edgekit/api wrangler login
+
+# 2. Set your production secret
+pnpm --filter @edgekit/api wrangler secret put DEFAULT_APP_SECRET
+
+# 3. Build Web Dashboard and deploy Worker
+pnpm deploy
+```
+
+---
+
+## 🔌 Ecosystem Integration Guides
+
+### 1. Next.js & Serverless (TypeScript)
+Copy [`snippets/events.ts`](snippets/events.ts) to `lib/events.ts`:
+```ts
+import { createEventsClient } from "@/lib/events";
+
+const events = createEventsClient({
+  host: process.env.EDGEKIT_HOST!,
+  appKey: process.env.EDGEKIT_KEY!,
+  appSecret: process.env.EDGEKIT_SECRET!,
+});
+
+// Single trigger
+await events.trigger({
+  channel: "orders",
+  event: "order.created",
+  data: { id: "ord_123", total: 49.90 },
+});
+
+// Batch trigger (multiple channels / events in one round-trip)
+await events.triggerBatch([
+  { channel: "orders", event: "order.created", data: { id: "1" } },
+  { channel: "notifications", event: "badge.update", data: { count: 3 } },
+]);
+```
+
+### 2. Shared Hosting & WordPress (PHP)
+Copy [`snippets/Events.php`](snippets/Events.php) to your project:
+```php
+use App\Services\EdgeKitEvents;
+
+$events = new EdgeKitEvents(
+    host: 'realtime.yourdomain.com',
+    appKey: 'key-default',
+    appSecret: 'secret-default'
+);
+
+// Non-blocking fire-and-forget (dispatches in <5ms without stalling page load!)
+$events->triggerAsync('orders', 'order.completed', ['order_id' => 456]);
+```
+
+### 3. Frontend: Zero-Dependency React / Browser
+Copy [`snippets/events-client.ts`](snippets/events-client.ts) into your frontend:
+```tsx
+import { createEdgekitClient, useEdgekitEvent } from "@/lib/events-client";
+
+export const client = createEdgekitClient({
+  host: "realtime.yourdomain.com",
+  appKey: "key-default",
+  transport: "ws", // or "sse" for native Server-Sent Events
+});
+
+export function LiveOrders() {
+  useEdgekitEvent(client, "orders", "order.created", (order) => {
+    console.log("New live order received:", order);
+  });
+
+  return <div>Listening to real-time events...</div>;
+}
+```
+
+### 4. Frontend: Official `pusher-js` or Laravel Echo
+No code changes needed! Just point to your Worker host:
+```js
+import Pusher from 'pusher-js';
+
+const pusher = new Pusher('key-default', {
+  wsHost: 'realtime.yourdomain.com',
+  wsPort: 443,
+  wssPort: 443,
+  forceTLS: true,
+  enabledTransports: ['ws', 'wss'],
+});
+
+const channel = pusher.subscribe('orders');
+channel.bind('order.created', (data) => console.log(data));
+```
+
+---
+
+## 📖 API Reference
+
+### 1. Universal REST Trigger
+- `POST /api/v1/trigger`
+- Headers: `Authorization: Bearer <SECRET>` or `X-App-Secret: <SECRET>`
+- Body:
+  ```json
+  {
+    "channel": "orders",
+    "event": "order.created",
+    "data": { "id": 10 }
+  }
+  ```
+
+### 2. Universal REST Batch Trigger
+- `POST /api/v1/batch`
+- Body:
+  ```json
+  {
+    "batch": [
+      { "channel": "orders", "event": "order.created", "data": { "id": 1 } },
+      { "channel": "chat", "event": "message", "data": { "text": "Hello" } }
+    ]
+  }
+  ```
+
+### 3. Universal Server-Sent Events (SSE)
+- `GET /events/stream?channel=orders,notifications&key=key-default`
+- Returns a live SSE stream (`text/event-stream`). Supports `Last-Event-ID` header for missed message replay.
+
+### 4. Ably REST Compatible Endpoints
+- `POST /channels/:channel_id/messages`: Publish single or batch messages.
+  - Auth: `Authorization: Basic base64(key:secret)` or `X-Ably-Key: key:secret`.
+- `GET /channels/:channel_id/messages`: Query message history.
+- `GET /channels`: Query active channel presence.
+- `POST /keys/:key/requestToken`: Request auth token.
+
+### 5. Pusher v7 Compatible Endpoints
+- WebSocket: `/app/:app_key`
+- HTTP Trigger: `POST /apps/:app_id/events` (standard HMAC-SHA256 signature)
+- Channel Queries: `GET /apps/:app_id/channels`
+
+---
+
+## 📄 License
+MIT © Rafael SFDC. Open source, self-hosted, and community-driven.

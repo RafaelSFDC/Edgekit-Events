@@ -207,7 +207,9 @@ export interface Translations {
   snippets: {
     title: string;
     subtitle: string;
+    tabClient: string;
     tabJavascript: string;
+    tabAbly: string;
     tabLaravel: string;
     tabPhp: string;
     tabNode: string;

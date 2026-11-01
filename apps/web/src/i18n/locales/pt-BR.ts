@@ -207,7 +207,9 @@ export const ptBR: Translations = {
   snippets: {
     title: 'Exemplos Prontos de Conexão',
     subtitle: 'Copie o código com as credenciais do seu aplicativo para começar em segundos',
-    tabJavascript: 'JavaScript / React',
+    tabClient: 'React / Navegador (Zero-NPM)',
+    tabJavascript: 'Pusher-js (Vanilla)',
+    tabAbly: 'Protocolo Ably',
     tabLaravel: 'Laravel Echo',
     tabPhp: 'PHP Puro (cURL)',
     tabNode: 'Node.js',
@@ -216,7 +218,7 @@ export const ptBR: Translations = {
     tabDotnet: 'C# (.NET)',
     tabCurl: 'cURL Terminal',
     copiedSnippet: 'Snippet copiado para a área de transferência!',
-    viewAllSnippets: 'Ver todos os 7 clientes zero-dependency na pasta snippets/',
+    viewAllSnippets: 'Ver todos os clientes zero-dependency na pasta snippets/',
   },
   modal: {
     title: 'Autenticar com Passkey',

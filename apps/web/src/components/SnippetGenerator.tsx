@@ -10,13 +10,13 @@ interface SnippetGeneratorProps {
   host?: string;
 }
 
-type SnippetTab = 'js' | 'laravel' | 'php' | 'node' | 'python' | 'go' | 'dotnet' | 'curl';
+type SnippetTab = 'client' | 'js' | 'ably' | 'laravel' | 'php' | 'node' | 'python' | 'go' | 'dotnet' | 'curl';
 
 export const SnippetGenerator: React.FC<SnippetGeneratorProps> = ({
   host,
 }) => {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<SnippetTab>('js');
+  const [activeTab, setActiveTab] = useState<SnippetTab>('client');
   const [copied, setCopied] = useState(false);
 
   const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : undefined;
@@ -28,6 +28,30 @@ export const SnippetGenerator: React.FC<SnippetGeneratorProps> = ({
   const isTls = isHttps || wsPort === 443;
 
   const snippets: Record<SnippetTab, string> = {
+    client: `// Zero dependências NPM! Copie o helper para o seu projeto (ex: lib/events-client.ts)
+import { createEdgekitClient, useEdgekitEvent } from "@/lib/events-client";
+
+// 1. Instancie o cliente escolhendo WebSocket ou Server-Sent Events (SSE):
+export const client = createEdgekitClient({
+  host: "${hostDisplay}",
+  appKey: "${keyDisplay}",
+  transport: "ws", // use "sse" para streaming nativo unidirecional leve
+  useTls: ${isTls},
+});
+
+// 2. Uso com Hook React (Next.js / Vite / CRA):
+export function LiveNotifier() {
+  useEdgekitEvent(client, "pedidos", "novo-pedido", (data) => {
+    console.log("Novo pedido recebido ao vivo:", data);
+  });
+
+  return <div>Ouvindo eventos em tempo real...</div>;
+}
+
+// Ou no JavaScript puro (Vanilla):
+const sub = client.subscribe("pedidos");
+sub.bind("novo-pedido", (data) => console.log(data));`,
+
     js: `// 1. Instale pusher-js (npm i pusher-js) ou use a CDN oficial
 import Pusher from "pusher-js";
 
@@ -50,6 +74,27 @@ channel.bind("novo-pedido", (data) => {
   alert("Novo pedido #" + data.pedido_id + " recebido!");
 });`,
 
+    ably: `// Compatibilidade nativa com Ably REST e SDK oficial
+// 1. Via Fetch REST direto (sem SDK):
+const res = await fetch("${isTls ? 'https' : 'http'}://${hostDisplay}/channels/pedidos/messages", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-Ably-Key": "${keyDisplay}:sua-chave-secreta",
+  },
+  body: JSON.stringify({
+    name: "novo-pedido",
+    data: { pedido_id: 1054, valor: 99.90 }
+  }),
+});
+console.log("Ably publicado:", await res.json());
+
+// 2. Consultar histórico de mensagens do canal (Ably History):
+const hist = await fetch("${isTls ? 'https' : 'http'}://${hostDisplay}/channels/pedidos/messages", {
+  headers: { "X-Ably-Key": "${keyDisplay}:sua-chave-secreta" },
+});
+console.log("Histórico do canal:", await hist.json());`,
+
     laravel: `// 1. Em config/broadcasting.php adicione a conexão pusher:
 'pusher' => [
     'driver' => 'pusher',
@@ -68,7 +113,8 @@ channel.bind("novo-pedido", (data) => {
 event(new OrderCreated($order));`,
 
     php: `<?php
-// Disparo direto em PHP Puro (sem Composer nem dependências pesadas)
+// Disparo em PHP (Compatível com WordPress, Laravel, cPanel e hospedagem compartilhada)
+// Opção rápida com cURL não-bloqueante (timeout 150ms) para não travar o carregamento:
 $workerUrl = '${isTls ? 'https' : 'http'}://${hostDisplay}/api/v1/trigger';
 $appSecret = 'sua-chave-secreta';
 
@@ -83,39 +129,52 @@ $payload = [
 ];
 
 $ch = curl_init($workerUrl);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Content-Type: application/json',
-    'X-App-Secret: ' . $appSecret
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => json_encode($payload),
+    CURLOPT_TIMEOUT_MS     => 150, // Fire-and-forget ultra rápido
+    CURLOPT_NOSIGNAL       => 1,
+    CURLOPT_HTTPHEADER     => [
+        'Content-Type: application/json',
+        'X-App-Secret: ' . $appSecret
+    ]
 ]);
 
 $response = curl_exec($ch);
 curl_close($ch);
+echo "Disparado com sucesso!";`,
 
-echo $response;`,
+    node: `// Disparo via Fetch nativo em Node.js 18+ ou Next.js (App Router / Server Actions)
+const baseUrl = "${isTls ? 'https' : 'http'}://${hostDisplay}";
+const appSecret = "sua-chave-secreta";
 
-    node: `// Disparo via Fetch nativo em Node.js 18+ ou Next.js
-const res = await fetch("${isTls ? 'https' : 'http'}://${hostDisplay}/api/v1/trigger", {
+// 1. Disparo único (POST /api/v1/trigger)
+const res = await fetch(\`\${baseUrl}/api/v1/trigger\`, {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "X-App-Secret": "sua-chave-secreta",
+    "X-App-Secret": appSecret,
   },
   body: JSON.stringify({
     channel: "pedidos",
     event: "novo-pedido",
-    data: {
-      pedido_id: 1042,
-      cliente: "Carlos Eduardo",
-      status: "aprovado"
-    }
+    data: { pedido_id: 1042, cliente: "Carlos Eduardo" }
   }),
 });
+console.log("Evento entregue:", await res.json());
 
-const result = await res.json();
-console.log("Evento entregue:", result);`,
+// 2. Disparo em lote (POST /api/v1/batch)
+await fetch(\`\${baseUrl}/api/v1/batch\`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", "X-App-Secret": appSecret },
+  body: JSON.stringify({
+    batch: [
+      { channel: "pedidos", event: "novo-pedido", data: { id: 1043 } },
+      { channel: "notificacoes", event: "badge", data: { count: 4 } }
+    ]
+  })
+});`,
 
     python: `import requests
 
@@ -216,8 +275,14 @@ Console.WriteLine(result);`,
     >
       <div className="flex items-center overflow-x-auto pb-1">
         <TabsList className="bg-muted p-1 h-auto flex-wrap">
+          <TabsTrigger value="client" className="text-xs px-2.5 py-1">
+            {t.snippets.tabClient}
+          </TabsTrigger>
           <TabsTrigger value="js" className="text-xs px-2.5 py-1">
             {t.snippets.tabJavascript}
+          </TabsTrigger>
+          <TabsTrigger value="ably" className="text-xs px-2.5 py-1">
+            {t.snippets.tabAbly}
           </TabsTrigger>
           <TabsTrigger value="laravel" className="text-xs px-2.5 py-1">
             {t.snippets.tabLaravel}

@@ -200,6 +200,74 @@ func (c *Client) AuthorizeChannel(socketID, channel string, channelData any) (*C
 	}, nil
 }
 
+// BatchItem represents a single event inside a batch trigger request.
+type BatchItem struct {
+	Channel  string `json:"channel"`
+	Event    string `json:"event"`
+	Data     any    `json:"data"`
+	SocketID string `json:"socket_id,omitempty"`
+}
+
+// TriggerBatch broadcasts multiple events in a single HTTP request (POST /api/v1/batch).
+func (c *Client) TriggerBatch(ctx context.Context, batch []BatchItem) (map[string]any, error) {
+	bodyBytes, err := json.Marshal(map[string]any{"batch": batch})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode batch payload: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/api/v1/batch", c.baseURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.appSecret)
+	req.Header.Set("X-App-Secret", c.appSecret)
+	req.Header.Set("User-Agent", "EdgekitEvents-Go/1.0")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// GetHistory retrieves message history for a channel (if retention is enabled).
+func (c *Client) GetHistory(ctx context.Context, channel string) ([]map[string]any, error) {
+	url := fmt.Sprintf("%s/api/v1/channels/%s/history", c.baseURL, channel)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.appSecret)
+	req.Header.Set("X-App-Secret", c.appSecret)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Channel  string           `json:"channel"`
+		Messages []map[string]any `json:"messages"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return result.Messages, nil
+}
+
 // GetChannels queries active channel statistics.
 func (c *Client) GetChannels(ctx context.Context) (map[string]any, error) {
 	url := fmt.Sprintf("%s/apps/%s/channels", c.baseURL, c.appID)

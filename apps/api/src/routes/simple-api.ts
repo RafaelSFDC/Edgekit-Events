@@ -196,3 +196,84 @@ simpleApiRoute.delete("/api/v1/channels/:name", async (c) => {
   const result = await response.json();
   return c.json(result, response.status as any);
 });
+
+/**
+ * 5. Simplified REST Batch trigger endpoint:
+ * POST /api/v1/batch
+ */
+simpleApiRoute.post("/api/v1/batch", async (c) => {
+  const auth = resolveTargetApp(c);
+  if (!auth.app) {
+    return c.json({ error: auth.error }, auth.status as any);
+  }
+
+  let body: any = null;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const items = Array.isArray(body) ? body : body?.batch;
+  if (!Array.isArray(items) || items.length === 0) {
+    return c.json({ error: "Expected an array of events or an object with 'batch' array" }, 400);
+  }
+
+  const batch = items.map((item) => ({
+    channel: item.channel,
+    event: item.event || item.name || "message",
+    data: item.data,
+    socket_id: item.socket_id,
+  }));
+
+  const doId = c.env.APP_SESSION.idFromName(auth.app.id);
+  const stub = c.env.APP_SESSION.get(doId);
+
+  const broadcastUrl = new URL(c.req.url);
+  broadcastUrl.pathname = "/broadcast-batch";
+
+  const response = await stub.fetch(broadcastUrl.toString(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-app-id": auth.app.id,
+      "x-app-key": auth.app.key,
+      "x-app-secret": auth.app.secret,
+    },
+    body: JSON.stringify({ batch }),
+  });
+
+  const result = await response.json();
+  return c.json(result);
+});
+
+/**
+ * 6. Simplified Channel History Query:
+ * GET /api/v1/channels/:name/history
+ */
+simpleApiRoute.get("/api/v1/channels/:name/history", async (c) => {
+  const auth = resolveTargetApp(c);
+  if (!auth.app) {
+    return c.json({ error: auth.error }, auth.status as any);
+  }
+
+  const channelName = c.req.param("name");
+  const doId = c.env.APP_SESSION.idFromName(auth.app.id);
+  const stub = c.env.APP_SESSION.get(doId);
+
+  const historyUrl = new URL(c.req.url);
+  historyUrl.pathname = "/history";
+  historyUrl.searchParams.set("channel", channelName);
+
+  const response = await stub.fetch(historyUrl.toString(), {
+    method: "GET",
+    headers: {
+      "x-app-id": auth.app.id,
+      "x-app-key": auth.app.key,
+      "x-app-secret": auth.app.secret,
+    },
+  });
+
+  const result = await response.json();
+  return c.json(result, response.status as any);
+});

@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "cloudflare-realtime",
+  "name": "edgekit-events",
   "main": "src/index.ts",
   "compatibility_date": "2025-02-14",
   "compatibility_flags": ["nodejs_compat"],

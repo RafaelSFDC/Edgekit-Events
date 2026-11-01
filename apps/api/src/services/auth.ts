@@ -164,3 +164,58 @@ export function verifySimpleBearerAuth(
 
   return false;
 }
+
+/**
+ * Verify Ably-compatible authentication:
+ * Supports:
+ * 1. Authorization: Basic base64(appKey:appSecret) or base64(appId.appKey:appSecret)
+ * 2. Authorization: Bearer <appSecret>
+ * 3. X-Ably-Key: appKey:appSecret or appId.appKey:appSecret
+ * 4. Query param ?key=appKey:appSecret
+ */
+export function verifyAblyAuth(
+  app: AppConfig,
+  authHeader?: string | null,
+  ablyKeyHeader?: string | null,
+  queryKey?: string | null
+): boolean {
+  if (authHeader) {
+    const basicMatch = authHeader.match(/^Basic\s+(.+)$/i);
+    if (basicMatch) {
+      try {
+        const decoded = atob(basicMatch[1]);
+        if (
+          constantTimeEquals(decoded, `${app.key}:${app.secret}`) ||
+          constantTimeEquals(decoded, `${app.id}.${app.key}:${app.secret}`)
+        ) {
+          return true;
+        }
+      } catch {}
+    }
+
+    const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+    if (bearerMatch && constantTimeEquals(bearerMatch[1], app.secret)) {
+      return true;
+    }
+  }
+
+  if (ablyKeyHeader) {
+    if (
+      constantTimeEquals(ablyKeyHeader, `${app.key}:${app.secret}`) ||
+      constantTimeEquals(ablyKeyHeader, `${app.id}.${app.key}:${app.secret}`)
+    ) {
+      return true;
+    }
+  }
+
+  if (queryKey) {
+    if (
+      constantTimeEquals(queryKey, `${app.key}:${app.secret}`) ||
+      constantTimeEquals(queryKey, `${app.id}.${app.key}:${app.secret}`)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}

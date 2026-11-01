@@ -42,6 +42,25 @@ export interface ChannelRecord {
   webhookUrl?: string;
   vacatedAt?: number;
   createdAt: number;
+  historyLimit?: number;
+}
+
+export interface MessageRecord {
+  id: string;
+  channel: string;
+  name: string;
+  data: any;
+  timestamp: number;
+}
+
+export interface BatchTriggerPayload {
+  batch: Array<{
+    channel: string;
+    name?: string;
+    event?: string;
+    data: any;
+    socket_id?: string;
+  }>;
 }
 
 export interface CreateChannelPayload {

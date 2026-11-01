@@ -106,6 +106,91 @@ class EdgeKitEvents
     }
 
     /**
+     * Fire-and-forget asynchronous trigger (ideal for WordPress, cPanel, and shared hosting).
+     * Fires the event with a 150ms timeout so the PHP execution finishes without stalling user response.
+     *
+     * @param string|array<string> $channel
+     * @param string $event
+     * @param mixed $data
+     * @param string|null $socketId
+     * @return bool True if queued/dispatched without immediate connection error
+     */
+    public function triggerAsync(string|array $channel, string $event, mixed $data, ?string $socketId = null): bool
+    {
+        $channels = is_array($channel) ? array_values($channel) : [$channel];
+        $payload = [
+            'app_id' => $this->appId,
+            'channels' => $channels,
+            'event' => $event,
+            'data' => $data,
+        ];
+        if ($socketId !== null) {
+            $payload['socket_id'] = $socketId;
+        }
+
+        $url = "{$this->baseUrl}/api/v1/trigger";
+        $jsonBody = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $jsonBody,
+            CURLOPT_NOSIGNAL => 1,
+            CURLOPT_TIMEOUT_MS => 150, // Ultra-fast non-blocking fire-and-forget
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $this->appSecret,
+                'X-App-Secret: ' . $this->appSecret,
+                'User-Agent: EdgekitEvents-PHP-Async/1.0',
+            ],
+        ]);
+
+        curl_exec($ch);
+        $errno = curl_errno($ch);
+        curl_close($ch);
+
+        // CURLE_OPERATION_TIMEDOUT (28) is considered success for fire-and-forget dispatch
+        return $errno === 0 || $errno === 28;
+    }
+
+    /**
+     * Broadcasts multiple events in a single batch request.
+     *
+     * @param array<array{channel: string, event: string, data: mixed, socket_id?: string}> $batch
+     * @return array
+     */
+    public function triggerBatch(array $batch): array
+    {
+        $url = "{$this->baseUrl}/api/v1/batch";
+        $jsonBody = json_encode(['batch' => $batch], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $jsonBody,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $this->appSecret,
+                'X-App-Secret: ' . $this->appSecret,
+                'User-Agent: EdgekitEvents-PHP/1.0',
+            ],
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($response === false || $httpCode >= 400) {
+            throw new RuntimeException("Batch trigger failed (HTTP {$httpCode})");
+        }
+
+        return json_decode((string)$response, true) ?? [];
+    }
+
+    /**
      * Authorizes a subscription to a private or presence channel.
      * Call this in your auth controller (e.g. `/broadcasting/auth` or `/api/pusher/auth`).
      *

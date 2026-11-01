@@ -129,6 +129,56 @@ export function createEventsClient(config: EventsConfig) {
     },
 
     /**
+     * Broadcasts multiple events in a single batch request.
+     */
+    async triggerBatch(
+      batch: Array<{ channel: string; event: string; data: any; socketId?: string }>
+    ): Promise<{ success: boolean; delivered_to?: number }> {
+      const res = await fetch(`${baseUrl}/api/v1/batch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${appSecret}`,
+          'X-App-Secret': appSecret,
+        },
+        body: JSON.stringify({
+          batch: batch.map((item) => ({
+            channel: item.channel,
+            event: item.event,
+            data: item.data,
+            socket_id: item.socketId,
+          })),
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Batch trigger failed with HTTP ${res.status}`);
+      }
+
+      return await res.json();
+    },
+
+    /**
+     * Retrieves recent message history for a channel (if retention is enabled).
+     */
+    async getHistory(channel: string): Promise<Array<{ id: string; name: string; data: any; timestamp: number }>> {
+      const res = await fetch(`${baseUrl}/api/v1/channels/${encodeURIComponent(channel)}/history`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${appSecret}`,
+          'X-App-Secret': appSecret,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to get channel history: HTTP ${res.status}`);
+      }
+
+      const json: any = await res.json();
+      return json.messages || [];
+    },
+
+    /**
      * Authorizes a subscription to a private or presence channel.
      * Use this inside your authentication route (e.g. Next.js `/api/pusher/auth`).
      *

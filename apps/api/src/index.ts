@@ -4,6 +4,8 @@ import type { Env } from "./types/env";
 import { pusherWsRoute } from "./routes/pusher-ws";
 import { pusherHttpRoute } from "./routes/pusher-http";
 import { simpleApiRoute } from "./routes/simple-api";
+import { sseRoute } from "./routes/sse";
+import { ablyHttpRoute } from "./routes/ably-http";
 import { healthRoute } from "./routes/health";
 import { debugRoute } from "./routes/debug";
 
@@ -28,6 +30,8 @@ app.route("/", healthRoute);
 app.route("/", pusherWsRoute);
 app.route("/", pusherHttpRoute);
 app.route("/", simpleApiRoute);
+app.route("/", sseRoute);
+app.route("/", ablyHttpRoute);
 app.route("/", debugRoute);
 
 // Raiz: serve o Dashboard da Web via Static Assets ou redireciona para info se for API JSON
